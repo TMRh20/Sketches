@@ -4,8 +4,6 @@
 #include <RF24.h>
 #include <RF24_config.h>
 #include "printf.h"
-#include <avr/sleep.h>
-#include <avr/power.h>
 /*
 
  **** Wireless Microphone/Speaker/Radio or Intercom by TMRh20 - 2011-2014 ****
@@ -23,13 +21,15 @@
  2 X NRF24L01 Wireless Radio Modules
  1 | 2 Output Device(s) (Speaker, Amplifer, etc)
  1 | 2 Input Device(s) (Microphone, Recorded Audio etc)
+ RF24 Library from https://github.com/TMRh20/RF24
+ 
  Optional:
- 1 x LED for status indicator
+ 2 x LED for status indicator
  1 or more buttons for external control
  1 or more sensors for automated recording
 
- Audio format: 4kHz-29kHz 8-bit Mono
- Range: Up to 100m with PA module. 1000m with PA+LNA  at 12kHz or lower sample rate, 250kps data rate
+ Audio format: 4kHz-44+kHz? 8-bit Mono
+ Advertised Range: Up to 100m with PA module. 1000m with PA+LNA  at 12kHz or lower sample rate, 250kps data rate
 
  *Usage:*
  1. Configure the options below in User Configurable Variables
@@ -56,18 +56,18 @@
 
 RF24 radio(48,49);                            //Choose the CE, CS Pins for the NRF24L01+ radio module 
 #define SAMPLE_RATE 32000                     //The sample rate to use for transferring audio samples
-#define RF_SPEED RF24_1MBPS                   //RF24_250KBPS will do 13-14khz sample rate max, RF24_1MBPS up to 24-25khz, RF24_2MBPS for higher. These are not limits, just a guide.
-#define speakerPin 11                         //The pin to output audio on
+#define RF_SPEED RF24_1MBPS                   //RF24_250KBPS will do 13-20khz+ sample rate, RF24_1MBPS up to 24-44khz+, RF24_2MBPS for higher. These are not limits, just a guide.
+#define speakerPin 11                         //The pin to output audio on. (9,10 on UNO,Nano)
 #define speakerPin2 12
 #define ANALOG_PIN A0                         //The pin that analog readings will be taken from (microphone pin)
 
 //***** Optional user variables ********************
-#define ledPin 4                              //Indicator pin
+#define ledPin A5                              //Indicator pin
 #define TX_PIN A1                             //Button pin to trigger recording & transmission
 #define VOL_UP_PIN A2                         //Pin for external volume control
 #define VOL_DN_PIN A3                         //Pin for external volume control
 #define REMOTE_TX_PIN A4                      //Pin for externally triggering remote recording
-#define REMOTE_RX_PIN A5                      //Pin for externally stopping remote recording
+#define REMOTE_RX_PIN 4                      //Pin for externally stopping remote recording (needs timeout enabled)
 #define buffSize 32                          //The size of the memory buffer to use
 //#define speakerTX                           //Whether to output to speaker while transmitting
 //#define oversampling                        //Oversampling is recommended for low sample rates only
@@ -83,7 +83,7 @@ unsigned long timer, cntr, recvSt, ledTimer = 0, ledVal;
 unsigned int intCount = 0;
 byte txCmd[2] = {'r','R'};
 byte buffer[2][buffSize+1];
-char volMod = -1;
+char volMod = 1;
 
 //****** Initialization and setup *****************
 void setup(){

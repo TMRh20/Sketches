@@ -34,7 +34,7 @@ void RX(){ //Start Receiving
         digitalWrite(ledPin,LOW);
 	ADCSRA = 0; ADCSRB = 0;               //Disable Analog to Digital Converter (ADC)
         buffEmpty[0] = 1; buffEmpty[1] = 1;   //Set the buffers to empty
-        TCCR1A |= _BV(COM1A1);                //Enable output to speaker pin
+        TCCR1A |= _BV(COM1A1) | _BV(COM1B1) | _BV(COM1B0);                //Enable output to speaker pin
         #if defined (oversampling)
           ICR1 = 10 * (800000/SAMPLE_RATE);     //Set timer top for 2X oversampling
         #else
