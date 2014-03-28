@@ -8,69 +8,85 @@
 
  **** Wireless Microphone/Speaker/Radio or Intercom by TMRh20 - 2011-2014 ****
 
- This is an extension of the wireless audio add-on library I published in early 2012 for use with my audio playback library, but
- in sketch form. Users can easily configure it to work as a two-way radio, intercom, or auto-triggered recording device. These 
- features may be fully incorporated into the main audio library at some point.
+ This is an extension of the wireless add-on library I published in early 2012 for use with my audio playback library, but
+ much improved, realtime, and in sketch form. Users can easily configure it to work as a two-way radio, intercom, or auto-triggered
+ recording device. These features may be fully incorporated into the main audio library at some point.
  
  *What it does:*
  Audio is captured by the on-board Analog-to-Digital Converter (ADC) into a digital (PCM/WAV) format. The audio is then transmitted wirelessly
- to a remote device using NRF24L01 radio modules. Recording can be started remotely, by external buttons, or automatically by sensors etc. 
+ to one or more remote devices using NRF24L01 radio modules. Recording can be started remotely, by external buttons, or automatically by sensors
+ etc. Supports multiple devices via multicasting and a wide range of quality vs data-rate configurations.
 
  *Requirements:*
- 2 X Arduino Uno, Nano, Mega, etc.
- 2 X NRF24L01 Wireless Radio Modules
- 1 | 2 Output Device(s) (Speaker, Amplifer, etc)
- 1 | 2 Input Device(s) (Microphone, Recorded Audio etc)
- RF24 Library from https://github.com/TMRh20/RF24
- 
+ 2 or more Arduino Uno, Nano, Mega, etc.
+ 2 or more NRF24L01 Wireless Radio Modules
+ 1 or more Output Device(s) (Speaker, Amplifer, etc)
+ 1 or more Input Device(s) (Microphone, Recorded Audio etc)
+ RF24 Library from https://github.com/TMRh20/RF24 ( https://github.com/TMRh20/RF24/archive/master.zip )
+  
  Optional:
- 2 x LED for status indicator
+ 1 or more LED for status indicator
  1 or more buttons for external control
  1 or more sensors for automated recording
 
- Audio format: 4kHz-44+kHz? 8-bit Mono
- Advertised Range: Up to 100m with PA module. 1000m with PA+LNA  at 12kHz or lower sample rate, 250kps data rate
+ Audio format: 4kHz-44kHz+ 8 to 10-bit Mono
+ Advertised Range: Up to 100m with PA module. 1000m with PA+LNA  at 20-24kHz or lower sample rate, 250kps data rate
 
  *Usage:*
  1. Configure the options below in User Configurable Variables
     a: Choose the analog pin to record on
-    b: Set RADIO_NO 0 for one device, RADIO_NO 1 for the other
     c: Choose other options such as sample rate and data speed
 
- 2. Upload this sketch to both devices with all options the same, except for RADIO_NO and pin selections
+ 2. Upload this sketch to both devices with all options the same, except for pin selections etc
  3. Use serial commands to control either device and test
- 4. Connect buttons or sensors as desired
+ 4. Connect buttons or sensors for external or automated control and modify as desired
 
 
  Notes & Troubleshooting:
- If the Arduino or radio modules seem to be resetting etc, it is likely due to a shortage of power. Disconnect other devices to test.
- Arduino Mega seems to need the device run off 5v. Arduino Nano etc. seem to be ok at 3v or 5v for modules that support both.
- Data speed has to be set correctly for the selected sample rate. See the notes below
+ Ensure the device(s) work normally with the standard Getting Started sketch etc. before attempting audio streaming
+ Disconnect all other modules etc and double/triple check wiring
+ Ensure the same sample rate, speed and bits per sample are the same on all devices
+ Addressing etc is preconfigured to support multiple devices, double check the mandatory user variables below.
+ 
+ Blog Documentation:
+ http://tmrh20.blogspot.com/2014/03/arduino-radiointercomwireless-audio.html
+ http://tmrh20.blogspot.com/2014/03/high-speed-data-transfers-and-wireless.html
  
 */
 
 /***********************************************
 //******* MANDATORY User Variables **************/
 
-#define RADIO_NO 0                            //Needs to be changed for each device. Controls which pipes are used.
-
-RF24 radio(48,49);                            //Choose the CE, CS Pins for the NRF24L01+ radio module 
-#define SAMPLE_RATE 32000                     //The sample rate to use for transferring audio samples
+RF24 radio(48,49);                            //Choose the CE, CS Pins for the NRF24L01+ radio module. 
+#define SAMPLE_RATE 32000                     //The sample rate to use for transferring audio samples  Note: 44khz+ sample rate requires 8-bits per sample
 #define RF_SPEED RF24_1MBPS                   //RF24_250KBPS will do 13-20khz+ sample rate, RF24_1MBPS up to 24-44khz+, RF24_2MBPS for higher. These are not limits, just a guide.
-#define speakerPin 11                         //The pin to output audio on. (9,10 on UNO,Nano)
+#define speakerPin 11                         //The pins to output audio on. (9,10 on UNO,Nano)
 #define speakerPin2 12
 #define ANALOG_PIN A0                         //The pin that analog readings will be taken from (microphone pin)
 
 //***** Optional user variables ********************
-#define ledPin A5                              //Indicator pin
+
+//10-bit audio requires more bandwidth. A 20khz sample rate will need 25KB/S transfer rate, which is about max for 250kbps data rate.
+//With a 32khz sample rate, the volume can be set to -1 to shift the sample down to 9-bit, which is the highest the timers can handle at 32khz
+#define tenBit                                //Enable 10-bit samples   Note: 44khz+ sample rate requires 8-bits per sample
+
+#define RADIO_NO 0                            //Only needed if using remote commands with more than 2 devices. Command code would need editing.
+#define ledPin A5                             //Indicator pin
 #define TX_PIN A1                             //Button pin to trigger recording & transmission
 #define VOL_UP_PIN A2                         //Pin for external volume control
 #define VOL_DN_PIN A3                         //Pin for external volume control
 #define REMOTE_TX_PIN A4                      //Pin for externally triggering remote recording
-#define REMOTE_RX_PIN 4                      //Pin for externally stopping remote recording (needs timeout enabled)
-#define buffSize 32                          //The size of the memory buffer to use
+#define REMOTE_RX_PIN 4                       //Pin for externally stopping remote recording (needs timeout enabled)
+#define buffSize 32                           //The size of the memory buffer to use. Not really configurable.
 //#define speakerTX                           //Whether to output to speaker while transmitting
-//#define oversampling                        //Oversampling is recommended for low sample rates only
+//#define oversampling                        //Oversampling is recommended for low sample rates only. This only affects playback.
+
+
+
+//********Radio Defines ****************************
+// Radio pipe addresses for the 2 nodes to communicate.
+const uint64_t pipes[4] = { 0xABCDABCD71LL, 0x544d52687CLL, 0x544d526832LL };
+
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || (__AVR_ATmega32U4__) || (__AVR_AT90USB646__) || defined(__AVR_AT90USB1286__) || (__AVR_ATmega128__) ||defined(__AVR_ATmega1281__)||defined(__AVR_ATmega2561__)
   #define rampMega
@@ -83,8 +99,13 @@ unsigned long timer, cntr, recvSt, ledTimer = 0, ledVal;
 unsigned int intCount = 0;
 byte txCmd[2] = {'r','R'};
 byte buffer[2][buffSize+1];
-char volMod = 1;
-
+char volMod = -1;
+byte bitPos = 0, bytePos = 25;
+#if defined (tenBit)
+  unsigned int sampl;
+  byte bytH;
+  byte bytL;
+#endif  
 //****** Initialization and setup *****************
 void setup(){
   
@@ -105,7 +126,11 @@ void setup(){
   RX();                                       //Enable reception of audio streams
   
   if(SAMPLE_RATE < 16000){
-    volMod = 2;
+    volMod = 1;
+  }else{
+    #if !defined (tenBit)
+      volMod = 0;
+    #endif
   }
 
 }
@@ -147,7 +172,7 @@ void loop(){
   //Transfer rate calculator. This can be commented out
   if(millis() - timer > 3000){                 //Timer for indication of transfer speed
     timer = millis();  
-    if(cntr < 80 ){ streaming = 0; RX(); }    //Disable TX if packets are not being sent
+    if(cntr < 80 ){ streaming = 0; RX(); }     //Disable TX if packets are not being sent
     Serial.print("Transfer Rate: ");    
     Serial.print((float)cntr*32/3000);         //The count is 1 for every 32 bytes. Cntr*32 = Total bytes sent or received
     Serial.println(" KB/s");
@@ -169,10 +194,10 @@ void setVolume(char vol) {
 }
 
 void timerStart(){
-        ICR1 = 10 * (800000/SAMPLE_RATE);                //Timer will count up to this value from 0;
-        TCCR1A = _BV(COM1A1) ; //Enable the timer port/pin as output
-	TCCR1A |= _BV(WGM11);                            //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
-	TCCR1B = _BV(WGM13) | _BV(WGM12) | _BV(CS10);    //CS10 = no prescaling  
+        ICR1 = 10 * (800000/SAMPLE_RATE);                  //Timer will count up to this value from 0;
+        TCCR1A = _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1);  //Enable the timer port/pin as output
+	TCCR1A |= _BV(WGM11);                              //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
+	TCCR1B = _BV(WGM13) | _BV(WGM12) | _BV(CS10);      //CS10 = no prescaling  
 }
 
 

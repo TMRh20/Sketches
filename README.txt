@@ -10,6 +10,6 @@ to draw the video at up to 8mhz, producing up to approx 400x216 video
 
 Arduino Radio/Wireless Audio - Functional - near completion
 
-TX_0 - TX/RX of wireless audio using only two Arduinos and two NRF24L01 modules. 
+TX_0 - TX/RX of reasonable quality wireless audio using two or more Arduinos and two or more NRF24L01 modules. 
 Easily configurable development sketch. Looking at creating a library for wireless audio via Arduino and NRF24L01 modules. This is one of the initial mockup sketches as the code is nearing completion.
 **Requires my fork of RF24 library found at https://github.com/TMRh20/RF24
