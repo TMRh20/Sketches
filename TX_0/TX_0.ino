@@ -58,7 +58,7 @@
 //******* MANDATORY User Variables **************/
 
 RF24 radio(48,49);                            //Choose the CE, CS Pins for the NRF24L01+ radio module. 
-#define SAMPLE_RATE 32000                     //The sample rate to use for transferring audio samples  Note: 44khz+ sample rate requires 8-bits per sample
+#define SAMPLE_RATE 24000                     //The sample rate to use for transferring audio samples  Note: 44khz+ sample rate requires 8-bits per sample
 #define RF_SPEED RF24_1MBPS                   //RF24_250KBPS will do 13-20khz+ sample rate, RF24_1MBPS up to 24-44khz+, RF24_2MBPS for higher. These are not limits, just a guide.
 #define speakerPin 11                         //The pins to output audio on. (9,10 on UNO,Nano)
 #define speakerPin2 12
@@ -101,9 +101,9 @@ byte txCmd[2] = {'r','R'};
 byte buffer[2][buffSize+1];
 char volMod = -1;
 byte bitPos = 0, bytePos = 25;
+byte bytH;
 #if defined (tenBit)
   unsigned int sampl;
-  byte bytH;
   byte bytL;
 #endif  
 //****** Initialization and setup *****************
