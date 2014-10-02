@@ -7,6 +7,7 @@ Arduino TV - Functional but incomplete - Based on TV Out library and other code 
 NTSC_8Mhz_Example - An example of producing video pixels on an NTSC display. Uses the UART
 to draw the video at up to 8mhz, producing up to approx 400x216 video
 
+SPI_UART - This is a little library that I used to drive nrf24l01 radio modules using the UART on Arduino boards.
 
 Arduino Radio/Wireless Audio - Functional - near completion
 
