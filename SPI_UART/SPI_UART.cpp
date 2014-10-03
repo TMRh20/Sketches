@@ -11,11 +11,8 @@
 #include "pins_arduino.h"
 #include "SPI_UART.h"
 
-SPIClass SPI;
 
-
-
-void SPIClass::begin() {
+void SPIUARTClass::begin() {
 
   // Set SS to high so a connected chip will be "deselected" by default
   digitalWrite(SS, HIGH);
@@ -63,7 +60,7 @@ void SPIClass::begin() {
 }
 
 
-void SPIClass::end() {
+void SPIUARTClass::end() {
   //SPCR &= ~_BV(SPE);
 #if defined (MEGA)
   UCSR1C &= ~(_BV(UMSEL01) | _BV(UMSEL00));
@@ -73,7 +70,7 @@ void SPIClass::end() {
 
 }
 
-void SPIClass::setBitOrder(uint8_t bitOrder)
+void SPIUARTClass::setBitOrder(uint8_t bitOrder)
 {
 //  if(bitOrder == LSBFIRST) {
 //    SPCR |= _BV(DORD);
@@ -96,7 +93,7 @@ if(bitOrder == LSBFIRST) {
 
 }
 
-void SPIClass::setDataMode(uint8_t mode)
+void SPIUARTClass::setDataMode(uint8_t mode)
 {
   //SPCR = (SPCR & ~SPI_MODE_MASK) | mode;
 
@@ -133,7 +130,7 @@ void SPIClass::setDataMode(uint8_t mode)
 #endif
 }
 
-void SPIClass::setClockDivider(uint8_t rate)
+void SPIUARTClass::setClockDivider(uint8_t rate)
 {
   //SPCR = (SPCR & ~SPI_CLOCK_MASK) | (rate & SPI_CLOCK_MASK);
   //SPSR = (SPSR & ~SPI_2XCLOCK_MASK) | ((rate >> 2) & SPI_2XCLOCK_MASK);

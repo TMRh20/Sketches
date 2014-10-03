@@ -39,7 +39,7 @@
 #endif
 
 
-class SPIClass {
+class SPIUARTClass {
 public:
   inline static byte transfer(byte _data);
   inline static byte fTransfer(byte _data);
@@ -56,9 +56,8 @@ public:
   static void setClockDivider(uint8_t);
 };
 
-extern SPIClass SPI;
 
-byte SPIClass::fTransfer(byte _data) {
+byte SPIUARTClass::fTransfer(byte _data) {
   //SPDR = _data;
   //while (!(SPSR & _BV(SPIF)));
   //return SPDR;
@@ -80,7 +79,7 @@ byte SPIClass::fTransfer(byte _data) {
 
 }
 
-byte SPIClass::transfer(byte _data) {
+byte SPIUARTClass::transfer(byte _data) {
   //SPDR = _data;
   //while (!(SPSR & _BV(SPIF)));
   //return SPDR;
@@ -101,7 +100,7 @@ byte SPIClass::transfer(byte _data) {
 
 }
 
-void SPIClass::attachInterrupt() {
+void SPIUARTClass::attachInterrupt() {
   //SPCR |= _BV(SPIE);
 #if defined (MEGA)
   UCSR1A |= _BV(UDRE0);
@@ -111,7 +110,7 @@ void SPIClass::attachInterrupt() {
 
 }
 
-void SPIClass::detachInterrupt() {
+void SPIUARTClass::detachInterrupt() {
   //SPCR &= ~_BV(SPIE);
 #if defined (MEGA)
   UCSR1A &= ~_BV(UDRE0);
