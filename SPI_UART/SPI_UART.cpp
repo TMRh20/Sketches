@@ -135,34 +135,34 @@ void SPIUARTClass::setClockDivider(uint8_t rate)
   //SPCR = (SPCR & ~SPI_CLOCK_MASK) | (rate & SPI_CLOCK_MASK);
   //SPSR = (SPSR & ~SPI_2XCLOCK_MASK) | ((rate >> 2) & SPI_2XCLOCK_MASK);
 #if defined (MEGA)
-  if(rate == 0){ //4Mhz
+  if(rate == 0){ //4Mhz - div4
   	//UBRR1 = 1;
-  	UBRR1 = 0; //Actually 8mhz
+  	UBRR1 = 1; 
   	UCSR1A &= ~_BV(U2X0);
   }else
-  if(rate == 1){ //1Mhz
+  if(rate == 1){ //1Mhz - div16
   	UBRR1 = 7;
   	UCSR1A &= ~_BV(U2X0);
   }else
-  if(rate == 2){
+  if(rate == 2){  //250khz
 	  UBRR1 = 31;
 	  UCSR1A &= ~_BV(U2X0);
   }else
-  if(rate == 4){
-	  UBRR1 = 3;
+  if(rate == 4){ //8mhz
+	  UBRR1 = 0;
 	  UCSR1A &= ~_BV(U2X0);
   }else
-  if(rate == 8){
+  if(rate == 5){ //2mhz
 	  UBRR1 = 3;
 	  UCSR1A &= ~_BV(U2X0);
   }
 #else
   if(rate == 0){ //4Mhz
   	//UBRR1 = 1;
-  	UBRR0 = 0; //Actually 8mhz
+  	UBRR0 = 1; 
   	UCSR0A &= ~_BV(U2X0);
   }else
-  if(rate == 1){ //1Mhz
+  if(rate == 1){ //16Mhz
   	UBRR0 = 7;
   	UCSR0A &= ~_BV(U2X0);
   }else
@@ -170,8 +170,8 @@ void SPIUARTClass::setClockDivider(uint8_t rate)
 	  UBRR0 = 31;
 	  UCSR0A &= ~_BV(U2X0);
   }else
-  if(rate == 4){
-	  UBRR0 = 3;
+  if(rate == 4){ //8mhz
+	  UBRR0 = 0;
 	  UCSR0A &= ~_BV(U2X0);
   }else
   if(rate == 8){
