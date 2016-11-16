@@ -58,20 +58,20 @@ public:
 
 
 byte SPIUARTClass::fTransfer(byte _data) {
-  //SPDR = _data;
-  //while (!(SPSR & _BV(SPIF)));
-  //return SPDR;
-  //while (!(*UCSRnA & _BV (TXC0)) ){}
-#if defined (MEGA)
+
+#if defined (__arm__)
+  while( !(USART0->US_CSR & US_CSR_TXRDY) ){;} 
+  USART0->US_THR = _data;
+  while(  !(USART0->US_CSR & US_CSR_RXRDY) ){;} 
+  return USART0->US_RHR;
+#elif defined (MEGA)
   while ( !(UCSR1A & _BV(UDRE0))){ }
   UDR1 = _data;
-  //while ( !(*UCSRNA & _BV(UDRE0))){ }                      //Wait until the USART is ready for more data
   while( !(UCSR1A & _BV(RXC1) )){}
   return UDR1;
 #else
     while ( !(UCSR0A & _BV(UDRE0))){ }
     UDR0 = _data;
-    //while ( !(*UCSRNA & _BV(UDRE0))){ }                      //Wait until the USART is ready for more data
     while( !(UCSR0A & _BV(RXC0) )){}
   return UDR0;
 #endif
@@ -80,11 +80,13 @@ byte SPIUARTClass::fTransfer(byte _data) {
 }
 
 byte SPIUARTClass::transfer(byte _data) {
-  //SPDR = _data;
-  //while (!(SPSR & _BV(SPIF)));
-  //return SPDR;
-  //while (!(*UCSRnA & _BV (TXC0)) ){}
-#if defined (MEGA)
+
+#if defined (__arm__)
+  while( !(USART0->US_CSR & US_CSR_TXRDY) ){;} 
+  USART0->US_THR = _data;
+  while(  !(USART0->US_CSR & US_CSR_RXRDY) ){;} 
+  return USART0->US_RHR;
+#elif defined (MEGA)
   while ( !(UCSR1A & _BV(UDRE0))){ }
   UDR1 = _data;
   //while ( !(*UCSRNA & _BV(UDRE0))){ }                      //Wait until the USART is ready for more data
@@ -101,8 +103,9 @@ byte SPIUARTClass::transfer(byte _data) {
 }
 
 void SPIUARTClass::attachInterrupt() {
-  //SPCR |= _BV(SPIE);
-#if defined (MEGA)
+#if defined (__arm__)
+  
+#elif defined (MEGA)
   UCSR1A |= _BV(UDRE0);
 #else
   UCSR0A |= _BV(UDRE0);
@@ -111,8 +114,9 @@ void SPIUARTClass::attachInterrupt() {
 }
 
 void SPIUARTClass::detachInterrupt() {
-  //SPCR &= ~_BV(SPIE);
-#if defined (MEGA)
+#if defined (__arm__)
+
+#elif defined (MEGA)
   UCSR1A &= ~_BV(UDRE0);
 #else
   UCSR0A &= ~_BV(UDRE0);

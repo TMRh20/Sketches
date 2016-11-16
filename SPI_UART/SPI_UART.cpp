@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2010 by Cristian Maglie <c.maglie@bug.st>
+ * Copyright (c) 2016 TMRh20 <tmrh20@gmail.com>
  * SPI Master library for arduino.
  *
  * This file is free software; you can redistribute it and/or modify
@@ -14,20 +15,17 @@
 
 void SPIUARTClass::begin() {
 
-  // Set SS to high so a connected chip will be "deselected" by default
-  digitalWrite(SS, HIGH);
-
   // When the SS pin is set as OUTPUT, it can be used as
   // a general purpose output port (it doesn't influence
   // SPI operations).
   pinMode(SS, OUTPUT);
 
+  // Set SS to high so a connected chip will be "deselected" by default
+  digitalWrite(SS, HIGH);
+  
   // Warning: if the SS pin ever becomes a LOW INPUT then SPI
   // automatically switches to Slave, so the data direction of
   // the SS pin MUST be kept as OUTPUT.
-  //SPCR |= _BV(MSTR);
-  //SPCR |= _BV(SPE);
-
 
   // Set direction register for SCK and MOSI pin.
   // MISO pin automatically overrides to INPUT.
@@ -35,12 +33,17 @@ void SPIUARTClass::begin() {
   // clocking in a single bit since the lines go directly
   // from "input" to SPI control.
   // http://code.google.com/p/arduino/issues/detail?id=888
-  //pinMode(SCK, OUTPUT);
-  //pinMode(MOSI, OUTPUT);
-  #if defined (MEGA)
+
+  #if defined (__arm__)
+    //Arduino Due Pins: 18: MOSI, 19: MISO, SDA1: SCK, CS: User Selected, CE: User Selected
+    PIOA->PIO_ABSR |= (1u << 17);   // SCK: Assign A16 I/O to the Peripheral B function
+    PIOA->PIO_PDR |= (1u << 17);    // SCK: Disable PIO control, enable peripheral control
+    PIOA->PIO_ABSR |= (0u << 10);   // MOSI: Assign PA13 I/O to the Peripheral A function
+    PIOA->PIO_PDR |= (1u << 10);    // MOSI: Disable PIO control, enable peripheral control
+    PIOA->PIO_ABSR |= (0u << 11);   // MISO: Assign A12 I/O to the Peripheral A function
+    PIOA->PIO_PDR |= (1u << 11);    // MISO: Disable PIO control, enable peripheral control
+  #elif defined (MEGA)
   	pinMode(18, OUTPUT); //Serial 2
-  //pinMode(52, OUTPUT); //SCK
-  //PORTD |= _BV(PORTD5); //xck1 as output
   	DDRD |= _BV(DDD5);
   #else
   	pinMode(1,OUTPUT);
@@ -48,7 +51,14 @@ void SPIUARTClass::begin() {
   #endif
 
     //Set USART to Master mode
-  #if defined (MEGA)
+  #if defined(__arm__)
+    pmc_enable_periph_clk(ID_USART0);
+    USART0->US_MR = 0x409CE;
+    USART0->US_BRGR = 9;
+    USART0->US_CR = US_CR_RSTRX | US_CR_RSTTX;
+    USART0->US_CR = US_CR_RXEN;
+    USART0->US_CR = US_CR_TXEN;
+  #elif defined (MEGA)
     UCSR1C = _BV(UMSEL01) | _BV(UMSEL00);
     UCSR1B = _BV(RXEN0) | _BV(TXEN0);
     UCSR1A = 0;
@@ -61,8 +71,14 @@ void SPIUARTClass::begin() {
 
 
 void SPIUARTClass::end() {
-  //SPCR &= ~_BV(SPE);
-#if defined (MEGA)
+
+#if defined (__arm__)
+  USART0->US_CR = US_CR_RXDIS;
+  USART0->US_CR = US_CR_TXDIS;
+  PIOA->PIO_PDR &= ~(1u << 11);
+  PIOA->PIO_PDR &= ~(1u << 10);
+  PIOA->PIO_PDR &= ~(1u << 17);
+#elif defined (MEGA)
   UCSR1C &= ~(_BV(UMSEL01) | _BV(UMSEL00));
 #else
   UCSR0C &= ~(_BV(UMSEL01) | _BV(UMSEL00));
@@ -72,12 +88,10 @@ void SPIUARTClass::end() {
 
 void SPIUARTClass::setBitOrder(uint8_t bitOrder)
 {
-//  if(bitOrder == LSBFIRST) {
-//    SPCR |= _BV(DORD);
-//  } else {
-//    SPCR &= ~(_BV(DORD));
-//  }
-#if defined (MEGA)
+
+#if defined (__arm__)
+  
+#elif defined (MEGA)
   if(bitOrder == LSBFIRST) {
     UCSR1C |= _BV(2);  //UDORD
   } else {
@@ -95,9 +109,16 @@ if(bitOrder == LSBFIRST) {
 
 void SPIUARTClass::setDataMode(uint8_t mode)
 {
-  //SPCR = (SPCR & ~SPI_MODE_MASK) | mode;
 
-#if defined (MEGA)
+#if defined (__arm__)
+  if(mode == 0){
+    USART0->US_MR |= 1 << 8;
+  }else
+  if(mode == 4){
+    USART0->US_MR &= ~(1 << 8);  
+  }
+  
+#elif defined (MEGA)
   if(mode == 0){
 	  UCSR1C &= ~(_BV(1) | _BV(UCPOL0));
   }else
@@ -132,9 +153,10 @@ void SPIUARTClass::setDataMode(uint8_t mode)
 
 void SPIUARTClass::setClockDivider(uint8_t rate)
 {
-  //SPCR = (SPCR & ~SPI_CLOCK_MASK) | (rate & SPI_CLOCK_MASK);
-  //SPSR = (SPSR & ~SPI_2XCLOCK_MASK) | ((rate >> 2) & SPI_2XCLOCK_MASK);
-#if defined (MEGA)
+
+#if defined (__arm__)
+  USART0->US_BRGR = rate;
+#elif defined (MEGA)
   if(rate == 0){ //4Mhz - div4
   	//UBRR1 = 1;
   	UBRR1 = 1; 
@@ -180,4 +202,3 @@ void SPIUARTClass::setClockDivider(uint8_t rate)
   }
 #endif
 }
-
