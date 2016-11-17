@@ -42,6 +42,7 @@
 class SPIUARTClass {
 public:
   inline static byte transfer(byte _data);
+  inline static void transfer(void *_buf, size_t _count);
   inline static byte fTransfer(byte _data);
   // SPI Configuration methods
 
@@ -56,6 +57,27 @@ public:
   static void setClockDivider(uint8_t);
 };
 
+void SPIUARTClass::transfer(void *_buf, size_t _count){
+
+
+  uint8_t *d = (uint8_t*)_buf;
+  
+  if(_count == 1){
+      *d = transfer(*d);
+  }
+  #if defined (__arm__)
+
+    USART0->US_RPR = USART0->US_TPR = (uint32_t)_buf;
+    USART0->US_TCR = USART0->US_RCR = _count;
+    while( USART0->US_RNCR > 0 || USART0->US_RCR > 0 ){;} 
+
+  #else
+    while(_count--){
+      *d = transfer(*d);
+      d++;
+    }
+  #endif
+}
 
 byte SPIUARTClass::fTransfer(byte _data) {
 
