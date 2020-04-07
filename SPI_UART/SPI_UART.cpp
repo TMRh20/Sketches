@@ -157,7 +157,7 @@ void SPIUARTClass::setClockDivider(uint8_t rate)
 {
 
 #if defined (__arm__)
-  USART0->US_BRGR = rate;
+  USART0->US_BRGR = 9; //Default to 9.33Mhz, formula is 84mhz/9 = 9.33mhz
 #elif defined (MEGA)
   if(rate == 0){ //4Mhz - div4
   	//UBRR1 = 1;
