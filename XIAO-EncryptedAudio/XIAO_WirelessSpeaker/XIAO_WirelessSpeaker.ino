@@ -10,12 +10,12 @@ AutoAnalog aaAudio;
 nrf_to_nrf radio;
 
 /********************** User Config ***********************************/
-const uint8_t pipe[2][5] = {{0xCE,0xC3,0xE3,0xCC,0x3C},{0xC3,0xC3,0xE3,0xCC,0x3C}};
-uint8_t myKey[16] = {1,2,3,5,8,13,21,34,55,89,144,233,1,2,3,5};
+const uint8_t pipe[2][5] = { { 0xCE, 0xC3, 0xE3, 0xCC, 0x3C }, { 0xC3, 0xC3, 0xE3, 0xCC, 0x3C } };
+uint8_t myKey[16] = { 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 1, 2, 3, 5 };
 /*********************************************************/
 
 #define MAX_PAYLOAD_SIZE 110
-uint32_t sampleRate = 14850;
+uint32_t sampleRate = 16000;
 
 void setup() {
   aaAudio.begin(0, 1);
@@ -63,7 +63,7 @@ void loop() {
         buffer[i] += 0x8000;
       }
       memcpy(&aaAudio.dacBuffer16[0],&buffer[0],MAX_PAYLOAD_SIZE);
-      aaAudio.feedDAC(MAX_PAYLOAD_SIZE / 2);
+      aaAudio.feedDAC(0,MAX_PAYLOAD_SIZE / 2);
     }else
     if(pipe == 2){
       uint8_t bothKeys[32];

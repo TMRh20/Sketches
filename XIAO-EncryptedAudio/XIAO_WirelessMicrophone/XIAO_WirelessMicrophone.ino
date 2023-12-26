@@ -24,7 +24,7 @@ void setup() {
   aaAudio.begin(1, 0);  //Setup aaAudio using ADC only
   aaAudio.autoAdjust = 0;
   aaAudio.adcBitsPerSample = 16;
-  aaAudio.setSampleRate(16500);
+  aaAudio.setSampleRate(16000);
 
   radio.begin();
   radio.enableDynamicPayloads(MAX_PAYLOAD_SIZE + 12);
@@ -80,6 +80,7 @@ void loop() {
   // getADC() will trigger once, then block until the ADC data is ready
   aaAudio.getADC(MAX_PAYLOAD_SIZE / 2);
   ok = radio.write(&aaAudio.adcBuffer16[0], MAX_PAYLOAD_SIZE);
+ //aaAudio.feedDAC(0,MAX_PAYLOAD_SIZE);
 }
 
 /*********************************************************/
