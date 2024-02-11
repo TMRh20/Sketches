@@ -1,4 +1,5 @@
 
+void wait_until(uint8_t time);
 
 void configVideo(){
   

@@ -135,13 +135,6 @@ void shiftDown(){
   
 }
 
-void set_pixel(uint16_t x, uint8_t y, char c) {
-	if (x >= displayWidth*8 || y >= displayHeight)
-		return;
-	sp(x,y,c);
-        //dot(x,y);
-}
-
 static void inline sp(uint16_t x, uint8_t y, char c) {
 	if (c==1)
 		data[(x/8) + (y*wLDiv)] |= 0x80 >> (x&7);
@@ -150,6 +143,14 @@ static void inline sp(uint16_t x, uint8_t y, char c) {
 	else
 		data[(x/8) + (y*wLDiv)] ^= 0x80 >> (x&7);
 }
+
+void set_pixel(uint16_t x, uint8_t y, char c) {
+	if (x >= displayWidth*8 || y >= displayHeight)
+		return;
+	sp(x,y,c);
+        //dot(x,y);
+}
+
 
 
 void draw_line(int x0, uint8_t y0, int x1, uint8_t y1, char c) {
