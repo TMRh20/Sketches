@@ -1,0 +1,77 @@
+/*
+SPDX-FileCopyrightText: Copyright (C) ARDUINO SRL (http://www.arduino.cc)
+
+SPDX-License-Identifier: MPL-2.0
+*/
+
+@import url('fonts/fonts.css');
+
+/*
+ * This CSS is used to center the various elements on the screen
+ */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+.buttons {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.btn-primary {
+    background-color: #00979d;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #008a8f;
+    transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: #00979d;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-secondary:hover {
+    color: #008a8f;
+
+}
+
+.btn-tertiary {
+    border-radius: 6px;
+    border: 1px solid #C9D2D2;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 12px;
+    min-width: 50px;
+    height: 36px;
+}
