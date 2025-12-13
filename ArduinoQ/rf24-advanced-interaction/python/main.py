@@ -1,4 +1,4 @@
-/"""
+"""
  * See documentation at https://nRF24.github.io/RF24
  * See License information at root directory of this library
  * Author: Brendan Doherty (2bndy5) & TMRh20
@@ -27,10 +27,7 @@ Bridge.provide("RF24Callback", RF24Callback)
 
 ui = WebUI()
 ui.expose_api("GET", "/hello", lambda: {"message" : f"last received value: {webPld}","message2":"wtfover"})
-
-
 ui.on_message("message", gotMessage)
-
 
 App.run()  # This will block until the app is stopped
 
