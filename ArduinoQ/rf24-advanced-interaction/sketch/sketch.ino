@@ -125,7 +125,7 @@ void loop() {
       matrixTimer = millis();
       matrix.draw(shades[ctr]);
       ctr++;
-      if(ctr > 8){
+      if(ctr > 7){
         ctr = 0;
       }
     }else{
