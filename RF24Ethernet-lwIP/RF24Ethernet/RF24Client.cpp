@@ -95,10 +95,10 @@ Serial.println("recv cb");
 	ConnectState* state = (ConnectState*)arg;
 	myPcb = tpcb;
     if (p == nullptr) {
-        //state->connected = false;
-        //state->finished = true; // Break the loop
-        //tcp_close(tpcb);
-	    //myPcb = nullptr;
+        state->connected = false;
+        state->finished = true; // Break the loop
+        tcp_close(tpcb);
+	    myPcb = nullptr;
 		
         return ERR_OK;
     }
