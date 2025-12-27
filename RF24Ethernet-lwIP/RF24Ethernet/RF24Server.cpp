@@ -24,17 +24,26 @@ extern "C" {
 //#include "uip-conf.h"
 }
 
-/*************************************************************/
+uint16_t RF24Server::_port; 
 
+/*************************************************************/
+#ifndef USE_LWIP
 RF24Server::RF24Server(uint16_t port) : _port(htons(port))
 {
 }
+#else
+RF24Server::RF24Server(uint16_t port)
+{
+ _port = port;
+}
 
+#endif
 /*************************************************************/
 
 RF24Client RF24Server::available()
 {
-    Ethernet.tick();
+
+	Ethernet.tick();
 	#ifndef USE_LWIP
     for (uip_userdata_t* data = &RF24Client::all_data[0]; data < &RF24Client::all_data[UIP_CONNS]; data++)
     {
@@ -44,9 +53,38 @@ RF24Client RF24Server::available()
         }
     }
 	#else
-		
+		uint32_t data = 1;
+		return RF24Client(data);
 	#endif
     return RF24Client();
+}
+
+//err_t tcp_server_accept(void *arg, struct tcp_pcb *new_pcb, err_t err){
+	
+//}
+
+void RF24Server::restart()
+{
+  RF24Client::myPcb = tcp_new();
+
+    tcp_err(RF24Client::myPcb, RF24Client::error_callback);
+
+    Serial.print("already bound to port ");
+	Serial.println(RF24Server::_port);
+    RF24Client::gState.finished = false;
+	RF24Client::gState.connected = false;
+	RF24Client::gState.result = 0;
+    RF24Client::gState.waiting_for_ack = false;
+		
+    RF24Client::myPcb = tcp_listen(RF24Client::myPcb);
+
+
+	
+    tcp_arg(RF24Client::myPcb, &RF24Client::gState);
+    tcp_accept(RF24Client::myPcb, RF24Client::accept);
+
+
+    RF24Ethernet.tick();
 }
 
 /*************************************************************/
@@ -55,8 +93,37 @@ void RF24Server::begin()
 {
 	#ifndef USE_LWIP
     uip_listen(_port);
-	#else
+	#else		
+
+
+  RF24Client::myPcb = tcp_new();
+
+    tcp_err(RF24Client::myPcb, RF24Client::error_callback);
+
+///if(!doOnce){
+    Serial.print("bind to port ");
+	Serial.println(RF24Server::_port);
+	err_t err = tcp_bind(RF24Client::myPcb, IP_ADDR_ANY, RF24Server::_port);
+    if (err != ERR_OK) {
+		//Debug print
+		Serial.println("unable to bind to port");
+    }
+	doOnce = true;
+
+//}
+		RF24Client::gState.finished = false;
+		RF24Client::gState.connected = false;
+		RF24Client::gState.result = 0;
+	    RF24Client::gState.waiting_for_ack = false;
 		
+		delay(1000);
+		RF24Client::myPcb = tcp_listen(RF24Client::myPcb);
+
+//}
+	
+    tcp_arg(RF24Client::myPcb, &RF24Client::gState);
+    tcp_accept(RF24Client::myPcb, RF24Client::accept);
+
 	#endif
     RF24Ethernet.tick();
 }

@@ -27,8 +27,10 @@ class RF24Server : public Server
 
 public:
     RF24Server(uint16_t);
+	RF24Server();
     RF24Client available();
     void begin();
+	static void restart();
 #if defined(ESP32)
     /* on esp32 this is a pure virtual func */
     void begin(uint16_t port);
@@ -37,9 +39,10 @@ public:
     size_t write(const uint8_t* buf, size_t size);
     using Print::write;
     void setTimeout(uint32_t timeout);
+    bool doOnce;
 
 private:
-    uint16_t _port;
+	static uint16_t _port;    
 };
 
 #endif

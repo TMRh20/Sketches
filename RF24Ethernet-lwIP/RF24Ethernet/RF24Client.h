@@ -77,6 +77,7 @@ typedef struct __attribute__((__packed__))
 } uip_userdata_t;
 #else
   #include "lwIP_Arduino.h"
+#include "lwip\include\lwip\tcp.h"
 #endif
 
 class RF24Client : public Client
@@ -185,9 +186,13 @@ static err_t blocking_write(struct tcp_pcb* pcb, ConnectState* fstate, const cha
 static err_t sent_callback(void *arg, struct tcp_pcb *tpcb, uint16_t len);
 static void error_callback(void *arg, err_t err);
 static err_t recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
+static err_t srecv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
 static err_t on_connected(void *arg, struct tcp_pcb *tpcb, err_t err);
+static err_t accept(void *arg, struct tcp_pcb *tpcb, err_t err);
+static struct tcp_pcb* myPcb;// = nullptr;//tcp_new();// = nullptr;//tcp_new();
+//static bool serverActive;
 #endif
-    
+
 
 private:
 #ifndef USE_LWIP
@@ -207,10 +212,12 @@ private:
     friend void serialip_appcall(void);
     friend void uip_log(char* msg);
 #else
+    RF24Client(uint32_t data);
     RF24Client(uint8_t data);
     uint8_t* data;
 	static size_t _write(uint8_t* data, const uint8_t* buf, size_t size);
 	static int _available(uint8_t *data);
+	
 	friend class RF24EthernetClass;
     friend class RF24Server;
 	

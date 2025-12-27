@@ -106,7 +106,7 @@ err_t netif_output(struct netif *netif, struct pbuf *p)
     MIB2_STATS_NETIF_INC(netif, ifoutnucastpkts);
   }
 
-
+Serial.println("net out");
   RF24NetworkHeader headerOut(00, EXTERNAL_DATA_TYPE);
   if(RF24Ethernet.network.write(headerOut, buf, total_len)){
     return ERR_OK;
