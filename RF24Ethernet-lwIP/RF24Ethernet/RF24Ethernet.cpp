@@ -134,7 +134,7 @@ uint32_t RF24EthernetClass::netif_init(struct netif *myNetif)
   myNetif->name[1] = '0';
   myNetif->linkoutput = netif_output;
   myNetif->output     = tun_netif_output;
-  myNetif->mtu        = MAX_PAYLOAD_SIZE - 14;//ETHERNET_MTU;
+  myNetif->mtu        = MAX_PAYLOAD_SIZE;//ETHERNET_MTU;
   myNetif->flags      = NETIF_FLAG_BROADCAST |
                       NETIF_FLAG_IGMP |
                       NETIF_FLAG_MLD6 |

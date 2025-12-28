@@ -42,7 +42,7 @@ myPcb = tpcb;
 	Serial.println("sent cb");
     ConnectState* state = (ConnectState*)arg;
     state->waiting_for_ack = false; // Data is successfully out
-	state->finished = true;
+	//state->finished = true;
     return ERR_OK;
 }
 
@@ -62,15 +62,20 @@ myPcb = fpcb;
 		return ERR_CLSD;
 	}
     
-Serial.println("blk write 1");
-		
+Serial.print("blk write 1: ");
+	uint16_t available_space = tcp_sndbuf(fpcb);
+	Serial.println(available_space);
+	Serial.println(len);
+	while(len > available_space){
+		//Ethernet.tick();
+	}
 	err_t err = tcp_write(fpcb, data, len, TCP_WRITE_FLAG_COPY);
-Ethernet.tick();
+//Ethernet.tick();
     if (err != ERR_OK) {
         fstate->waiting_for_ack = false;
 		fstate->finished = true;
 	    Serial.println("BLK Write fail 2");		
-        return err;
+        return -3;
     }
 Serial.println("blk write 2");
     tcp_output(fpcb);
@@ -81,7 +86,7 @@ Serial.println("blk write 0.1");
 		volatile uint32_t timer = millis() + 1000;
     while (fstate->waiting_for_ack && !fstate->finished) {
 		if(millis() > timer){ Serial.println("blk write 0.2");
-			fstate->waiting_for_ack = false;
+			//fstate->waiting_for_ack = false;
 			fstate->finished = true;
 			fstate->result = -1;
 			break;			
@@ -109,7 +114,7 @@ Serial.println("recv cb");
 	myPcb = tpcb;
     if (p == nullptr) {
         state->connected = false;
-        state->finished = true; // Break the loop
+        //state->finished = true; // Break the loop
         tcp_close(tpcb);
 	    myPcb = nullptr;
 		
@@ -395,12 +400,9 @@ void RF24Client::stop()
 #else
 	
     uint32_t timeout = millis() + 10000;
-	while(gState.waiting_for_ack && millis() < timeout){RF24Ethernet.tick();}
+	while(!gState.finished && gState.waiting_for_ack && millis() < timeout){}//RF24Ethernet.tick();}
     if(myPcb != nullptr){
 	  gState.connected = false;
-	  gState.waiting_for_ack = false;
-	  gState.finished = false;
-	  gState.result = 0;
 	  tcp_close(myPcb);
 	  RF24Server::restart();
 	}
@@ -499,7 +501,23 @@ test2:
 	
 
     char buffer[size];
-	memcpy(buffer, buf, size);
+	uint32_t position = 0;
+	
+	while(size > MAX_PAYLOAD_SIZE){
+	  while(myPcb->snd_queuelen >= TCP_SND_QUEUELEN){
+	    Ethernet.tick();
+	  }
+      memcpy(buffer, &buf[position], MAX_PAYLOAD_SIZE);
+	  err_t write_err = blocking_write(myPcb, &gState, buffer, MAX_PAYLOAD_SIZE);
+	  position += MAX_PAYLOAD_SIZE;
+	  size -= MAX_PAYLOAD_SIZE;
+	  Ethernet.tick();
+
+    }
+	while(myPcb->snd_queuelen >= TCP_SND_QUEUELEN){
+	    Ethernet.tick();
+	}
+	memcpy(buffer, &buf[position], size);
 	err_t write_err = blocking_write(myPcb, &gState, buffer, size);	
 	
 	if (write_err == ERR_OK) {
