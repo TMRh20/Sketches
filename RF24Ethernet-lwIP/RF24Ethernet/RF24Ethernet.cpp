@@ -106,13 +106,13 @@ err_t netif_output(struct netif *netif, struct pbuf *p)
     MIB2_STATS_NETIF_INC(netif, ifoutnucastpkts);
   }
 
-Serial.print("net out ");
-Serial.println(total_len);
+//Serial.print("net out ");
+//Serial.println(total_len);
   RF24NetworkHeader headerOut(00, EXTERNAL_DATA_TYPE);
   if(RF24Ethernet.network.write(headerOut, buf, total_len)){
     return ERR_OK;
   }else{
-	return ERR_OK;//-1;
+	return -1;
   }
   return ERR_OK;
 }
@@ -320,7 +320,9 @@ void RF24EthernetClass::set_gateway(IPAddress gwIP)
     uip_ip_addr(ipaddr, gwIP);
     uip_setdraddr(ipaddr);
 	#else
-		
+		ip4_addr_t new_gw;
+		IP4_ADDR(&new_gw, gwIP[0], gwIP[1], gwIP[2], gwIP[3]);
+		netif_set_gw(&Ethernet.myNetif, &new_gw);
 	#endif
 }
 
@@ -414,10 +416,13 @@ void RF24EthernetClass::tick()
 #ifndef USE_LWIP
 #if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_RP2040)
     yield();
-#endif
-#if defined(ARDUINO_ARCH_ESP32)
+#elif defined(ARDUINO_ARCH_ESP32)
     const TickType_t xDelay = 1 / portTICK_PERIOD_MS;
     vTaskDelay(xDelay);
+#else
+	#ifdef __WFE;
+		__WFE();
+    #endif
 #endif
         
     uint8_t result = RF24Ethernet.network.update();  
@@ -523,8 +528,8 @@ void RF24EthernetClass::tick()
 	return;
   }
   
-  RF24Ethernet.network.update();
-  sys_check_timeouts();
+  
+  //sys_check_timeouts();
   
   pbuf *p = readRXQueue(&RXQueue);
   if (p != nullptr)

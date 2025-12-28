@@ -29,7 +29,7 @@
 //#define UIP_SOCKET_NUMPACKETS 5
 //#endif
 
-#ifndef USE_LWIP
+#if USE_LWIP != 1
 #define UIP_CLIENT_CONNECTED    0x10
 #define UIP_CLIENT_CLOSE        0x20
 #define UIP_CLIENT_REMOTECLOSED 0x40
@@ -76,9 +76,9 @@ typedef struct __attribute__((__packed__))
     uint8_t myData[OUTPUT_BUFFER_SIZE];
 } uip_userdata_t;
 #else
-  #include "lwIP_Arduino.h"
-#include "lwip\include\lwip\tcp.h"
-#endif
+	#include <lwIP_Arduino.h>  
+    #include "lwip\include\lwip\tcp.h"
+ #endif
 
 class RF24Client : public Client
 {
@@ -168,7 +168,7 @@ public:
     };
 	
 	
-#ifndef USE_LWIP
+#if USE_LWIP != 1
     static uip_userdata_t all_data[UIP_CONNS];
 #else
 	
@@ -195,7 +195,7 @@ static bool serverActive;
 
 
 private:
-#ifndef USE_LWIP
+#if USE_LWIP != 1
     RF24Client(struct uip_conn* _conn);
     RF24Client(uip_userdata_t* conn_data);
 

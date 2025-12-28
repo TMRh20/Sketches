@@ -24,14 +24,15 @@ extern "C" {
 //#include "uip-conf.h"
 }
 
-uint16_t RF24Server::_port; 
 
 /*************************************************************/
-#ifndef USE_LWIP
+#if USE_LWIP != 1
 RF24Server::RF24Server(uint16_t port) : _port(htons(port))
 {
 }
 #else
+uint16_t RF24Server::_port; 
+
 RF24Server::RF24Server(uint16_t port)
 {
  _port = port;
@@ -44,7 +45,7 @@ RF24Client RF24Server::available()
 {
 
 	Ethernet.tick();
-	#ifndef USE_LWIP
+	#if USE_LWIP != 1
     for (uip_userdata_t* data = &RF24Client::all_data[0]; data < &RF24Client::all_data[UIP_CONNS]; data++)
     {
         if (data->packets_in != 0 && (((data->state & UIP_CLIENT_CONNECTED) && uip_conns[data->state & UIP_CLIENT_SOCKETS].lport == _port) || ((data->state & UIP_CLIENT_REMOTECLOSED) && ((uip_userdata_closed_t*)data)->lport == _port)))
@@ -62,7 +63,7 @@ RF24Client RF24Server::available()
 //err_t tcp_server_accept(void *arg, struct tcp_pcb *new_pcb, err_t err){
 	
 //}
-
+#if USE_LWIP == 1
 void RF24Server::restart()
 {
 	
@@ -71,8 +72,8 @@ void RF24Server::restart()
 
     tcp_err(RF24Client::myPcb, RF24Client::error_callback);
 
-    Serial.print("already bound to port ");
-	Serial.println(RF24Server::_port);
+    //Serial.print("already bound to port ");
+	//Serial.println(RF24Server::_port);
     RF24Client::myPcb = tcp_listen(RF24Client::myPcb);
 	
     tcp_arg(RF24Client::myPcb, &RF24Client::gState);
@@ -81,12 +82,12 @@ void RF24Server::restart()
 
     RF24Ethernet.tick();
 }
-
+#endif
 /*************************************************************/
 
 void RF24Server::begin()
 {
-	#ifndef USE_LWIP
+	#if USE_LWIP != 1
     uip_listen(_port);
 	#else		
 
@@ -96,8 +97,8 @@ void RF24Server::begin()
     tcp_err(RF24Client::myPcb, RF24Client::error_callback);
 
 ///if(!doOnce){
-    Serial.print("bind to port ");
-	Serial.println(RF24Server::_port);
+    //Serial.print("bind to port ");
+	//Serial.println(RF24Server::_port);
 	err_t err = tcp_bind(RF24Client::myPcb, IP_ADDR_ANY, RF24Server::_port);
     if (err != ERR_OK) {
 		//Debug print
@@ -144,7 +145,7 @@ size_t RF24Server::write(uint8_t c)
 size_t RF24Server::write(const uint8_t* buf, size_t size)
 {
     size_t ret = 0;
-	#ifndef USE_LWIP
+	#if USE_LWIP != 1
     for (uip_userdata_t* data = &RF24Client::all_data[0]; data < &RF24Client::all_data[UIP_CONNS]; data++)
     {
         if ((data->state & UIP_CLIENT_CONNECTED) && uip_conns[data->state & UIP_CLIENT_SOCKETS].lport == _port)
@@ -161,7 +162,7 @@ size_t RF24Server::write(const uint8_t* buf, size_t size)
 
 void RF24Server::setTimeout(uint32_t timeout)
 {
-	#ifndef USE_LWIP
+	#if USE_LWIP != 1
 #if UIP_CONNECTION_TIMEOUT > 0
     for (uint8_t i = 0; i < UIP_CONNS; i++) {
         uip_userdata_t* data = &RF24Client::all_data[i];

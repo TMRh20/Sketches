@@ -42,7 +42,11 @@ public:
     bool doOnce;
 
 private:
-	static uint16_t _port;    
+    #ifdef USE_LWIP
+	  static uint16_t _port;
+	#else
+	  uint16_t _port;
+	#endif
 };
 
 #endif

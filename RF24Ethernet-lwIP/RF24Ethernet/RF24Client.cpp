@@ -18,13 +18,12 @@
 
 #define UIP_TCP_PHYH_LEN UIP_LLH_LEN + UIP_IPTCPH_LEN
 
-#ifndef USE_LWIP
+#if USE_LWIP != 1
 uip_userdata_t RF24Client::all_data[UIP_CONNS];
 #else
 #define LWIP_ERR_T uint32_t
-
-    #include "lwip\include\lwip\tcp.h"
-	#include "lwip\include\lwip\ip_addr.h"
+#include "lwip\include\lwip\tcp.h"
+#include "lwip\include\lwip\ip_addr.h"
 #include "RF24Ethernet.h"
 
 
@@ -51,7 +50,7 @@ err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, con
     
 
 	
-	Serial.println("blk write");
+	//Serial.println("blk write");
 myPcb = fpcb;
 	if (!fpcb || !fstate->connected){
 		Serial.println(fstate->connected);
@@ -61,14 +60,22 @@ myPcb = fpcb;
 		
 		return ERR_CLSD;
 	}
-	fstate->waiting_for_ack = true;    
+ 
 Serial.print("blk write 1: ");
 	uint16_t available_space = tcp_sndbuf(fpcb);
-	Serial.println(available_space);
-	Serial.println(len);
+	//Serial.println(available_space);
+	//Serial.println(len);
+	uint32_t timeout = millis() + 35000;
 	while(len > available_space){
+		Ethernet.tick();
+		
+		if(millis() > timeout){
+			Serial.println("********** tx timeout *******");
+			return -1;
+		}
 		//Ethernet.tick();
 	}
+fstate->waiting_for_ack = true;   
 	err_t err = tcp_write(fpcb, data, len, TCP_WRITE_FLAG_COPY);
 //Ethernet.tick();
     if (err != ERR_OK) {
@@ -77,22 +84,22 @@ Serial.print("blk write 1: ");
 	    Serial.println("BLK Write fail 2");		
         return -3;
     }
-Serial.println("blk write 2");
+//Serial.println("blk write 2");
     tcp_output(fpcb);
-	Serial.println("blk write 2.2");
+//	Serial.println("blk write 2.2");
     tcp_sent(fpcb, sent_callback);
-Serial.println("blk write 0.1");
-	Serial.println("wait");
+//Serial.println("blk write 0.1");
+//	Serial.println("wait");
 		volatile uint32_t timer = millis() + 1000;
     while (fstate->waiting_for_ack && !fstate->finished) {
-		if(millis() > timer){ Serial.println("blk write 0.2");
+		if(millis() > timer){ //Serial.println("blk write 0.2");
 			//fstate->waiting_for_ack = false;
 			fstate->finished = true;
 			fstate->result = -1;
 			break;			
 		}
     }
-	Serial.println("blk write 3");
+//	Serial.println("blk write 3");
     return fstate->result;
 }
 
@@ -108,7 +115,7 @@ void RF24Client::error_callback(void *arg, err_t err) {
 
 
 err_t RF24Client::srecv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) {
-Serial.println("recv cb");
+//Serial.println("srecv cb");
 
 	ConnectState* state = (ConnectState*)arg;
 	myPcb = tpcb;
@@ -167,7 +174,7 @@ Serial.println("recv cb");
 
 
 err_t RF24Client::accept(void *arg, struct tcp_pcb *tpcb, err_t err) {
-	Serial.println("acc cb");
+	//Serial.println("acc cb");
 	ConnectState* state = (ConnectState*)arg;
 	myPcb = tpcb;
 
@@ -183,7 +190,8 @@ err_t RF24Client::accept(void *arg, struct tcp_pcb *tpcb, err_t err) {
 // Callback triggered by lwIP when handshake completes
 
 err_t RF24Client::on_connected(void *arg, struct tcp_pcb *tpcb, err_t err) {
-
+Serial.println("conn cb");
+myPcb = tpcb;
 	ConnectState* state = (ConnectState*)arg;
     state->result = err;
     state->finished = true;
@@ -197,7 +205,7 @@ err_t RF24Client::on_connected(void *arg, struct tcp_pcb *tpcb, err_t err) {
 #endif
 
 /*************************************************************/
-#ifndef USE_LWIP
+#if USE_LWIP != 1
 RF24Client::RF24Client() : data(NULL) {}
 #else
 RF24Client::RF24Client() : data(0) {}
@@ -205,7 +213,7 @@ RF24Client::RF24Client() : data(0) {}
 #endif
 /*************************************************************/
 
-#ifndef USE_LWIP
+#if USE_LWIP != 1
 RF24Client::RF24Client(uip_userdata_t* conn_data) : data(conn_data) {}
 #else
 RF24Client::RF24Client(uint32_t data) : data(0) {}	
@@ -214,7 +222,7 @@ RF24Client::RF24Client(uint32_t data) : data(0) {}
 
 uint8_t RF24Client::connected()
 {
-	#ifndef USE_LWIP
+	#if USE_LWIP != 1
     return (data && (data->packets_in != 0 || (data->state & UIP_CLIENT_CONNECTED))) ? 1 : 0;
 	#else
 	return gState.connected;
@@ -228,7 +236,7 @@ uint8_t RF24Client::connected()
 int RF24Client::connect(IPAddress ip, uint16_t port)
 {
 
-#ifndef USE_LWIP
+#if USE_LWIP != 1
 #if UIP_ACTIVE_OPEN > 0
 
     // do{
@@ -272,10 +280,13 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
 #else
 
 if(gState.connected == true){
+	if(myPcb != nullptr && myPcb->state != CLOSED){
+      return true;
+	}
 	tcp_abort(myPcb);
 	sys_check_timeouts(); 
-    Ethernet.tick();
-	gState.connected = false;
+    gState.connected = false;
+	Ethernet.tick();
 	return false;
 
 }
@@ -289,7 +300,7 @@ if(gState.connected == true){
 	    memset(incomingData,0,sizeof(incomingData));
 		Ethernet.RXQueue.nWrite = 0;
         Ethernet.RXQueue.nRead = 0;
-		for(int i=0; i< Ethernet.MAX_RX_QUEUE; i++){
+		for(uint16_t i=0; i< Ethernet.MAX_RX_QUEUE; i++){
 		  Ethernet.RXQueue.len[i] = 0;
 		}
 		gState.finished = false;
@@ -320,7 +331,7 @@ if(gState.connected == true){
     // Simulate blocking by looping until the callback sets 'finished'
     while (!gState.finished && millis() < timeout) {
          sys_check_timeouts(); 
-         Ethernet.update();
+         Ethernet.tick();
     }
     return gState.connected;
 
@@ -370,7 +381,7 @@ int RF24Client::connect(const char* host, uint16_t port)
 
 void RF24Client::stop()
 {
-#ifndef USE_LWIP
+#if USE_LWIP != 1
     if (data && data->state)
     {
 
@@ -409,7 +420,9 @@ if(serverActive){
 	}
 }else{
 	gState.connected = false;
-	tcp_close(myPcb);
+	if(myPcb != nullptr){
+      tcp_close(myPcb);
+	}
 }
 	
 	RF24Ethernet.tick();
@@ -422,7 +435,7 @@ if(serverActive){
 // EthernetServer::available() as the condition in an if-statement.
 bool RF24Client::operator==(const RF24Client& rhs)
 {
-	#ifndef USE_LWIP
+	#if USE_LWIP != 1
     return data && rhs.data && (data == rhs.data);
 	#else
 	return dataSize > 0 ? true : false;
@@ -434,8 +447,8 @@ bool RF24Client::operator==(const RF24Client& rhs)
 
 RF24Client::operator bool()
 {
-    //Ethernet.tick();
-	#ifndef USE_LWIP
+    Ethernet.tick();
+	#if USE_LWIP != 1
     return data && (!(data->state & UIP_CLIENT_REMOTECLOSED) || data->packets_in != 0);
 	#else
 	return dataSize > 0 ? true : false;
@@ -457,7 +470,7 @@ size_t RF24Client::write(const uint8_t* buf, size_t size)
 }
 
 /*************************************************************/
-#ifndef USE_LWIP
+#if USE_LWIP != 1
 size_t RF24Client::_write(uip_userdata_t* u, const uint8_t* buf, size_t size)
 #else
 size_t RF24Client::_write(uint8_t* data, const uint8_t* buf, size_t size)
@@ -466,7 +479,7 @@ size_t RF24Client::_write(uint8_t* data, const uint8_t* buf, size_t size)
 
 {
 
-#ifndef USE_LWIP
+#if USE_LWIP != 1
     size_t total_written = 0;
     size_t payloadSize = rf24_min(size, UIP_TCP_MSS);
 
@@ -510,9 +523,11 @@ test2:
 	}
     char buffer[size];
 	uint32_t position = 0;
+	uint32_t timeout1 = millis() + 5000;
 	
-	while(size > MAX_PAYLOAD_SIZE){
-	  while(myPcb->snd_queuelen >= TCP_SND_QUEUELEN){
+	while(size > MAX_PAYLOAD_SIZE && millis() < timeout1){
+		uint32_t timeout = millis() + 5000;
+	  while(myPcb->snd_queuelen >= TCP_SND_QUEUELEN && millis() < timeout){
 	    Ethernet.tick();
 	  }
       memcpy(buffer, &buf[position], MAX_PAYLOAD_SIZE);
@@ -522,7 +537,8 @@ test2:
 	  Ethernet.tick();
 
     }
-	while(myPcb->snd_queuelen >= TCP_SND_QUEUELEN){
+	uint32_t timeout = millis() + 5000;
+	while(myPcb->snd_queuelen >= TCP_SND_QUEUELEN && millis() < timeout){
 	    Ethernet.tick();
 	}
 	memcpy(buffer, &buf[position], size);
@@ -549,7 +565,7 @@ void uip_log(char* msg)
 }
 
 /*************************************************************/
-#ifndef USE_LWIP
+#if USE_LWIP != 1
 void serialip_appcall(void)
 {
     uip_userdata_t* u = (uip_userdata_t*)uip_conn->appstate;
@@ -728,7 +744,7 @@ finish:;
 }
 #endif
 /*******************************************************/
-#ifndef USE_LWIP
+#if USE_LWIP != 1
 uip_userdata_t* RF24Client::_allocateData()
 {
     for (uint8_t sock = 0; sock < UIP_CONNS; sock++)
@@ -775,7 +791,7 @@ int RF24Client::waitAvailable(uint32_t timeout)
 int RF24Client::available()
 {
     RF24Ethernet.tick();
-	#ifndef USE_LWIP
+	#if USE_LWIP != 1
     if (*this)
     {
         return _available(data);
@@ -787,13 +803,13 @@ int RF24Client::available()
 }
 
 /*************************************************************/
-#ifndef USE_LWIP
+#if USE_LWIP != 1
 int RF24Client::_available(uip_userdata_t* u)
 #else
 int RF24Client::_available(uint8_t *data)
 #endif
 {
-	#ifndef USE_LWIP
+	#if USE_LWIP != 1
     if (u->packets_in)
     {
         return u->dataCnt;
@@ -806,7 +822,7 @@ int RF24Client::_available(uint8_t *data)
 
 int RF24Client::read(uint8_t* buf, size_t size)
 {
-#ifndef USE_LWIP
+#if USE_LWIP != 1
     if (*this)
     {
         if (!data->packets_in)
@@ -880,7 +896,7 @@ int RF24Client::peek()
 {
     if (available())
     {
-		#ifndef USE_LWIP
+		#if USE_LWIP != 1
         return data->myData[data->in_pos];
 		#else
 		return incomingData[0];
@@ -893,10 +909,10 @@ int RF24Client::peek()
 
 void RF24Client::flush()
 {
-	#ifndef USE_LWIP
+	#if USE_LWIP != 1
     if (*this)
     {
-		#ifndef USE_LWIP
+		#if USE_LWIP != 1
         data->packets_in = 0;
         data->dataCnt = 0;
 		#else

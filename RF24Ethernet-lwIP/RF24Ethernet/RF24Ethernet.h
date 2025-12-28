@@ -29,13 +29,14 @@
  */
 
 #include <Arduino.h>
-#if F_CPU > 50000000
-  #ifndef USE_LWIP
-    #define USE_LWIP
+#if (!defined F_CPU || F_CPU > 50000000)
+  #if !defined ARDUINO_ARCH_RP2040 && !defined ARDUINO_ARCH_RP2350
+    #ifndef USE_LWIP
+      #define USE_LWIP 1
+	 #endif
   #endif
 #endif
-
-#ifndef USE_LWIP
+#if USE_LWIP != 1
   extern "C" {
   #include "uip-conf.h"
   #include "utility/uip.h"
@@ -49,7 +50,7 @@
   //#include "IPAddress.h"
   #include "RF24Client.h"
   #include "RF24Server.h"
-  #include <lwIP_Arduino.h>
+  #include <lwIP_Arduino.h>  
   #include "lwip\include\lwip\ip.h"
   #define IPADDRESS ip4_addr_t
 
@@ -69,7 +70,7 @@
     #include <RF24Mesh.h>
 #endif
 
-#ifndef USE_LWIP
+#if USE_LWIP != 1
 #include "ethernet_comp.h"
 #include "IPAddress.h"
 #include "RF24Client.h"
@@ -169,17 +170,11 @@ public:
      * Configure the IP address and subnet mask of the node. This is independent of the RF24Network layer, so the IP
      * and subnet only have to conform to standard IP routing rules within your network
      */
-//#ifndef USE_LWIP
     void begin(IPAddress ip);
     void begin(IPAddress ip, IPAddress dns);
     void begin(IPAddress ip, IPAddress dns, IPAddress gateway);
     void begin(IPAddress ip, IPAddress dns, IPAddress gateway, IPAddress subnet);
-/*#else
-	void begin(ip4_addr_t ip);
-    void begin(ip4_addr_t ip, ip4_addr_t dns);
-    void begin(ip4_addr_t ip, ip4_addr_t dns, ip4_addr_t gateway);
-    void begin(ip4_addr_t ip, ip4_addr_t dns, ip4_addr_t gateway, ip4_addr_t subnet);
-#endif*/
+
     /**
      * Configure the gateway IP address. This is generally going to be your master node with RF24Network address 00.
      */
@@ -253,7 +248,7 @@ static bool isUnicast(const uint8_t frame);
     #endif
 #endif
 
-#if defined USE_LWIP
+#if USE_LWIP == 1
 static constexpr uint16_t ETHERNET_MTU = 1500;
 static constexpr uint32_t NetIF_Speed_BPS = 1000000;
 static constexpr uint8_t MacAddr[6] = {0,1,2,3,4};
@@ -294,20 +289,11 @@ private:
 
     uint8_t RF24_Channel;
 
-#ifndef USE_LWIP
+#if USE_LWIP != 1
     struct timer periodic_timer;
 #if defined RF24_TAP
     struct timer arp_timer;
 #endif
-#endif
-
-#if defined USE_LWIP
-
-
-
-
-  
-  
 #endif
 
     friend class RF24Server;
