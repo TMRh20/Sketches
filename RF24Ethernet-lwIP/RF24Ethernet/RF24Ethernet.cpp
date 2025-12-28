@@ -111,7 +111,7 @@ Serial.println("net out");
   if(RF24Ethernet.network.write(headerOut, buf, total_len)){
     return ERR_OK;
   }else{
-	return -1;
+	return ERR_OK;//-1;
   }
   return ERR_OK;
 }

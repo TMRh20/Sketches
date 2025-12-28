@@ -70,7 +70,8 @@ Serial.println("blk write 2");
     tcp_output(fpcb);
     tcp_sent(fpcb, sent_callback);
 
-    while (fstate->waiting_for_ack && !fstate->finished) {
+    uint32_t timer = millis() + 10000;
+    while (fstate->waiting_for_ack && !fstate->finished && millis() < timer) {
         sys_check_timeouts(); 
         Ethernet.update();
     }
@@ -381,7 +382,11 @@ void RF24Client::stop()
     RF24Ethernet.tick();
 #else
 	
-   tcp_close(myPcb);
+    uint32_t timeout = millis() + 10000;
+	while(gState.waiting_for_ack && millis() < timeout){RF24Ethernet.tick();}
+    if(myPcb != nullptr){
+	  tcp_close(myPcb);
+	}
 	RF24Server::restart();
 	RF24Ethernet.tick();
 #endif
