@@ -426,7 +426,7 @@ void RF24EthernetClass::EthRX_Handler(const uint8_t * ethFrame, const uint16_t l
 void RF24EthernetClass::tick()
 {
 	
-#ifndef USE_LWIP
+
 #if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_RP2040)
     yield();
 #elif defined(ARDUINO_ARCH_ESP32)
@@ -437,7 +437,7 @@ void RF24EthernetClass::tick()
 		__WFE();
     #endif
 #endif
-        
+#ifndef USE_LWIP
     uint8_t result = RF24Ethernet.network.update();  
       
     if (result == EXTERNAL_DATA_TYPE) {

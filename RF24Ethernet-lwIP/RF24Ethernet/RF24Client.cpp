@@ -325,8 +325,7 @@ if(gState.connected == true){
 	IP4_ADDR(&myIp, ip[0], ip[1], ip[2], ip[3]);
 	ip_addr_t generic_addr;
 	ip_addr_copy_from_ip4(generic_addr, myIp);
-	
-	   err_t err = tcp_connect(myPcb, &generic_addr, port, on_connected);
+    err_t err = tcp_connect(myPcb, &generic_addr, port, on_connected);
 	#else
 	ip4_addr_t myIp;
 	IP4_ADDR(&myIp, ip[0], ip[1], ip[2], ip[3]);
