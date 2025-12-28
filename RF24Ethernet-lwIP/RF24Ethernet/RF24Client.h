@@ -190,7 +190,6 @@ static err_t srecv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err
 static err_t on_connected(void *arg, struct tcp_pcb *tpcb, err_t err);
 static err_t accept(void *arg, struct tcp_pcb *tpcb, err_t err);
 static struct tcp_pcb* myPcb;// = nullptr;//tcp_new();// = nullptr;//tcp_new();
-//static bool serverActive;
 #endif
 
 

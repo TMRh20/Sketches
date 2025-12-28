@@ -42,12 +42,16 @@ myPcb = tpcb;
 	Serial.println("sent cb");
     ConnectState* state = (ConnectState*)arg;
     state->waiting_for_ack = false; // Data is successfully out
+	state->finished = true;
     return ERR_OK;
 }
 
 
 err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, const char* data, size_t len) {
-    Serial.println("blk write");
+    
+	fstate->waiting_for_ack = true;
+	
+	Serial.println("blk write");
 myPcb = fpcb;
 	if (!fpcb || !fstate->connected){
 		Serial.println(fstate->connected);
@@ -57,23 +61,31 @@ myPcb = fpcb;
 		
 		return ERR_CLSD;
 	}
-    fstate->waiting_for_ack = true;
+    
 Serial.println("blk write 1");
+		
 	err_t err = tcp_write(fpcb, data, len, TCP_WRITE_FLAG_COPY);
-
+Ethernet.tick();
     if (err != ERR_OK) {
         fstate->waiting_for_ack = false;
-		Serial.println("BLK Write fail 2");
+		fstate->finished = true;
+	    Serial.println("BLK Write fail 2");		
         return err;
     }
 Serial.println("blk write 2");
     tcp_output(fpcb);
+	Serial.println("blk write 2.2");
     tcp_sent(fpcb, sent_callback);
-
-    uint32_t timer = millis() + 10000;
-    while (fstate->waiting_for_ack && !fstate->finished && millis() < timer) {
-        sys_check_timeouts(); 
-        Ethernet.update();
+Serial.println("blk write 0.1");
+	Serial.println("wait");
+		volatile uint32_t timer = millis() + 1000;
+    while (fstate->waiting_for_ack && !fstate->finished) {
+		if(millis() > timer){ Serial.println("blk write 0.2");
+			fstate->waiting_for_ack = false;
+			fstate->finished = true;
+			fstate->result = -1;
+			break;			
+		}
     }
 	Serial.println("blk write 3");
     return fstate->result;
@@ -385,9 +397,14 @@ void RF24Client::stop()
     uint32_t timeout = millis() + 10000;
 	while(gState.waiting_for_ack && millis() < timeout){RF24Ethernet.tick();}
     if(myPcb != nullptr){
+	  gState.connected = false;
+	  gState.waiting_for_ack = false;
+	  gState.finished = false;
+	  gState.result = 0;
 	  tcp_close(myPcb);
+	  RF24Server::restart();
 	}
-	RF24Server::restart();
+	
 	RF24Ethernet.tick();
 #endif
 }
@@ -410,7 +427,7 @@ bool RF24Client::operator==(const RF24Client& rhs)
 
 RF24Client::operator bool()
 {
-    Ethernet.tick();
+    //Ethernet.tick();
 	#ifndef USE_LWIP
     return data && (!(data->state & UIP_CLIENT_REMOTECLOSED) || data->packets_in != 0);
 	#else
@@ -482,8 +499,8 @@ test2:
 	
 
     char buffer[size];
-	memcpy(buffer, buf, size);	
-	err_t write_err = blocking_write(myPcb, &gState, buffer, size);
+	memcpy(buffer, buf, size);
+	err_t write_err = blocking_write(myPcb, &gState, buffer, size);	
 	
 	if (write_err == ERR_OK) {
 	  return(size);
