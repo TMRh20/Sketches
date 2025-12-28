@@ -65,6 +65,8 @@ RF24Client RF24Server::available()
 
 void RF24Server::restart()
 {
+	
+	
   RF24Client::myPcb = tcp_new();
 
     tcp_err(RF24Client::myPcb, RF24Client::error_callback);
@@ -90,7 +92,7 @@ void RF24Server::begin()
 
 
   RF24Client::myPcb = tcp_new();
-
+  RF24Client::serverActive = true;
     tcp_err(RF24Client::myPcb, RF24Client::error_callback);
 
 ///if(!doOnce){

@@ -33,7 +33,7 @@ static char incomingData[MAX_PAYLOAD_SIZE*2] __attribute__((aligned(4)));
 static uint16_t dataSize = 0;
 struct tcp_pcb* RF24Client::myPcb;
 //static struct tcp_pcb* sPcb;
-//bool RF24Client::serverActive;
+bool RF24Client::serverActive;
 
 
 // Called when the remote host acknowledges receipt of data
@@ -49,7 +49,7 @@ myPcb = tpcb;
 
 err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, const char* data, size_t len) {
     
-	fstate->waiting_for_ack = true;
+
 	
 	Serial.println("blk write");
 myPcb = fpcb;
@@ -61,7 +61,7 @@ myPcb = fpcb;
 		
 		return ERR_CLSD;
 	}
-    
+	fstate->waiting_for_ack = true;    
 Serial.print("blk write 1: ");
 	uint16_t available_space = tcp_sndbuf(fpcb);
 	Serial.println(available_space);
@@ -399,6 +399,7 @@ void RF24Client::stop()
     RF24Ethernet.tick();
 #else
 	
+if(serverActive){
     uint32_t timeout = millis() + 10000;
 	while(!gState.finished && gState.waiting_for_ack && millis() < timeout){}//RF24Ethernet.tick();}
     if(myPcb != nullptr){
@@ -406,6 +407,10 @@ void RF24Client::stop()
 	  tcp_close(myPcb);
 	  RF24Server::restart();
 	}
+}else{
+	gState.connected = false;
+	tcp_close(myPcb);
+}
 	
 	RF24Ethernet.tick();
 #endif
@@ -499,7 +504,10 @@ test2:
     return -1;
 #else
 	
-
+	
+	if(myPcb == nullptr){
+		return -1;
+	}
     char buffer[size];
 	uint32_t position = 0;
 	

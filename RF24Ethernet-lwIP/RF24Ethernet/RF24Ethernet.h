@@ -30,7 +30,9 @@
 
 #include <Arduino.h>
 #if F_CPU > 50000000
-  #define USE_LWIP
+  #ifndef USE_LWIP
+    #define USE_LWIP
+  #endif
 #endif
 
 #ifndef USE_LWIP
