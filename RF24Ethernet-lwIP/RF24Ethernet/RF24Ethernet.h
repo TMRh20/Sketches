@@ -50,9 +50,17 @@
   //#include "IPAddress.h"
   #include "RF24Client.h"
   #include "RF24Server.h"
-  #include <lwIP_Arduino.h>  
-  #include "lwip\include\lwip\ip.h"
-  #define IPADDRESS ip4_addr_t
+
+  #if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266
+    #include "lwip\ip.h"
+	#include "lwip\stats.h"
+	#include "lwip\netif.h"
+	#include "lwip\snmp.h"
+	#include "lwip\timeouts.h"
+  #else
+	#include <lwIP_Arduino.h>  
+    #include "lwip\include\lwip\ip.h"
+  #endif
 
 
 
@@ -258,7 +266,7 @@ static constexpr uint8_t MacAddr[6] = {0,1,2,3,4};
 
   static void EthRX_Handler(const uint8_t * ethFrame, const uint16_t lenEthFrame);
   //err_t netif_output(struct netif *myNetif, struct pbuf *p);
-  static err_t netif_init(struct netif *myNetif);
+  //static err_t netif_init(struct netif *myNetif);
   //err_t tun_netif_output(struct netif *netif, struct pbuf *p, const ip4_addr_t *ipaddr);
   //volatile uint8_t isConnected = 0;
   static bool isConnected;

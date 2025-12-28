@@ -22,8 +22,15 @@
 uip_userdata_t RF24Client::all_data[UIP_CONNS];
 #else
 #define LWIP_ERR_T uint32_t
-#include "lwip\include\lwip\tcp.h"
-#include "lwip\include\lwip\ip_addr.h"
+//
+#if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266
+  #include "lwip\tcp.h"
+  #include "lwip/timeouts.h"
+#else
+  #include "lwip\include\lwip\tcp.h"
+  #include "lwip\include\lwip\tcp.h"
+#endif
+
 #include "RF24Ethernet.h"
 
 
@@ -286,12 +293,12 @@ if(gState.connected == true){
 	tcp_abort(myPcb);
 	sys_check_timeouts(); 
     gState.connected = false;
-	Ethernet.tick();
-	return false;
+	//Ethernet.tick();
+	//return false;
 
 }
-		sys_check_timeouts(); 
-        Ethernet.tick();
+		//sys_check_timeouts(); 
+        //Ethernet.tick();
 		if(myPcb != nullptr){
   		  tcp_close(myPcb);
 		}
@@ -312,10 +319,21 @@ if(gState.connected == true){
     tcp_err(myPcb, error_callback);
     tcp_recv(myPcb, recv_callback);
 	
+
+	#if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266
+	ip4_addr_t myIp;
+	IP4_ADDR(&myIp, ip[0], ip[1], ip[2], ip[3]);
+	ip_addr_t generic_addr;
+	ip_addr_copy_from_ip4(generic_addr, myIp);
+	
+	   err_t err = tcp_connect(myPcb, &generic_addr, port, on_connected);
+	#else
 	ip4_addr_t myIp;
 	IP4_ADDR(&myIp, ip[0], ip[1], ip[2], ip[3]);
     // Start non-blocking connection
     err_t err = tcp_connect(myPcb, &myIp, port, on_connected);
+    #endif
+
 	uint32_t *test = &ip4_addr_get_u32(&myIp);
 	uint8_t test2 = *test & 0xFF;
 	
@@ -330,7 +348,6 @@ if(gState.connected == true){
     uint32_t timeout = millis() + 5000;
     // Simulate blocking by looping until the callback sets 'finished'
     while (!gState.finished && millis() < timeout) {
-         sys_check_timeouts(); 
          Ethernet.tick();
     }
     return gState.connected;

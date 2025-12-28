@@ -76,8 +76,13 @@ typedef struct __attribute__((__packed__))
     uint8_t myData[OUTPUT_BUFFER_SIZE];
 } uip_userdata_t;
 #else
-	#include <lwIP_Arduino.h>  
-    #include "lwip\include\lwip\tcp.h"
+	//
+	#if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266
+	  #include "lwip\tcp.h"
+	#else
+      #include <lwIP_Arduino.h>  
+      #include "lwip\include\lwip\tcp.h"
+	#endif
  #endif
 
 class RF24Client : public Client

@@ -23,6 +23,19 @@
 #if defined USE_LWIP
 RF24EthernetClass::EthQueue RF24EthernetClass::RXQueue __attribute__((aligned(4)));
 
+
+/*
+struct EthQueue
+{
+  uint8_t data[MAX_RX_QUEUE][MAX_FRAME_SIZE];
+  uint16_t len[MAX_RX_QUEUE];
+  uint32_t nRead;
+  uint32_t nWrite;
+};
+static EthQueue RXQueue __attribute__((aligned(4)));
+*/
+
+
 bool RF24EthernetClass::dataBufferEmpty;
 netif RF24EthernetClass::myNetif;
 
@@ -126,7 +139,7 @@ err_t tun_netif_output(struct netif *netif, struct pbuf *p, const ip4_addr_t *ip
     return netif->linkoutput(netif, p);
 }
   
-uint32_t RF24EthernetClass::netif_init(struct netif *myNetif)
+err_t netif_init(struct netif *myNetif)
 {
   
 
@@ -143,7 +156,7 @@ uint32_t RF24EthernetClass::netif_init(struct netif *myNetif)
   MIB2_INIT_NETIF(&Ethernet.myNetif, snmp_ifType_ppp, Ethernet.NetIF_Speed_BPS);
   //SMEMCPY(myNetif->hwaddr, &Ethernet.MacAddr, sizeof(myNetif->hwaddr));
   myNetif->hwaddr_len = 0;//sizeof(netif->hwaddr);
-  Ethernet.initRXQueue(&RXQueue);
+  Ethernet.initRXQueue(&Ethernet.RXQueue);
   netif_set_link_up(myNetif);
   return ERR_OK;
 }
