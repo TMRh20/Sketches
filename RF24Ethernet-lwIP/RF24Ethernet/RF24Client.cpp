@@ -67,10 +67,14 @@ err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, con
 	//Serial.println("blk write");
 myPcb = fpcb;
 	if (!fpcb || !fstate->connected){
+		Serial.print("tx with no connection: ");
 		Serial.println(fstate->connected);
 		if(!fpcb){
 			Serial.println("nofpbcb");
-			}
+		}else{
+			fpcb = nullptr;
+			myPcb = nullptr;
+		}
 		
 		return ERR_CLSD;
 	}
@@ -85,7 +89,7 @@ Serial.print("blk write 1: ");
 		
 		if(millis() > timeout){
 			Serial.println("********** tx timeout *******");
-			return -1;
+			return ERR_BUF;
 		}
 		//Ethernet.tick();
 	}
@@ -96,7 +100,7 @@ fstate->waiting_for_ack = true;
         fstate->waiting_for_ack = false;
 		fstate->finished = true;
 	    Serial.println("BLK Write fail 2");		
-        return -3;
+        return err;
     }
 //Serial.println("blk write 2");
     tcp_output(fpcb);
@@ -295,15 +299,16 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
 #endif // Active open enabled
 #else
 
-if(gState.connected == true){
+if(gState.connected == true || ( myPcb != nullptr && myPcb->state != CLOSED) ){
 	if(myPcb != nullptr && myPcb->state != CLOSED){
       return true;
 	}
 	tcp_abort(myPcb);
 	//sys_check_timeouts(); 
     gState.connected = false;
+	//myPcb = nullptr;
 	//Ethernet.tick();
-	//return false;
+	return false;
 
 }
 

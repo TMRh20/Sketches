@@ -127,7 +127,10 @@ err_t netif_output(struct netif *netif, struct pbuf *p)
 //Serial.println(total_len);
   RF24NetworkHeader headerOut(00, EXTERNAL_DATA_TYPE);
   if(total_len && total_len < MAX_PAYLOAD_SIZE){
-    RF24Ethernet.network.write(headerOut, buf, total_len);
+	  
+    if(!RF24Ethernet.network.write(headerOut, buf, total_len)){
+		return ERR_IF;
+	}
   }
   return ERR_OK;
 }
