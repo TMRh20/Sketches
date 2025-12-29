@@ -44,10 +44,17 @@ bool RF24Client::serverActive;
 
 // Called when the remote host acknowledges receipt of data
 err_t RF24Client::sent_callback(void *arg, struct tcp_pcb *tpcb, u16_t len) {
+
 myPcb = tpcb;
 	Serial.println("sent cb");
     ConnectState* state = (ConnectState*)arg;
-    state->waiting_for_ack = false; // Data is successfully out
+	if(state){
+      state->waiting_for_ack = false; // Data is successfully out
+	  state->finished = true;
+    }else{
+		
+		Serial.println("^^^^^^^^^ NO STATE ^^^^^^^^^^^^^^^^^");
+	}
 	//state->finished = true;
     return ERR_OK;
 }
@@ -200,10 +207,12 @@ err_t RF24Client::on_connected(void *arg, struct tcp_pcb *tpcb, err_t err) {
 Serial.println("conn cb");
 myPcb = tpcb;
 	ConnectState* state = (ConnectState*)arg;
-    state->result = err;
-    state->finished = true;
-    state->connected = true;
-	state->waiting_for_ack = false;
+	if(state){
+      state->result = err;
+      state->finished = true;
+      state->connected = true;
+	  state->waiting_for_ack = false;
+	}
     return ERR_OK;
 }
 
@@ -291,25 +300,20 @@ if(gState.connected == true){
       return true;
 	}
 	tcp_abort(myPcb);
-	sys_check_timeouts(); 
+	//sys_check_timeouts(); 
     gState.connected = false;
 	//Ethernet.tick();
 	//return false;
 
 }
-		//sys_check_timeouts(); 
-        //Ethernet.tick();
-		if(myPcb != nullptr){
-  		  tcp_close(myPcb);
-		}
+
 		myPcb = tcp_new();
+		if(!myPcb){
+			return 0;
+			
+		}
 		dataSize = 0;
 	    memset(incomingData,0,sizeof(incomingData));
-		Ethernet.RXQueue.nWrite = 0;
-        Ethernet.RXQueue.nRead = 0;
-		for(uint16_t i=0; i< Ethernet.MAX_RX_QUEUE; i++){
-		  Ethernet.RXQueue.len[i] = 0;
-		}
 		gState.finished = false;
 		gState.connected = false;
 		gState.result = 0;
@@ -319,29 +323,32 @@ if(gState.connected == true){
     tcp_err(myPcb, error_callback);
     tcp_recv(myPcb, recv_callback);
 	
-
-	#if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266
+	
+	err_t err = ERR_OK;
 	ip4_addr_t myIp;
+	#if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266
 	IP4_ADDR(&myIp, ip[0], ip[1], ip[2], ip[3]);
 	ip_addr_t generic_addr;
 	ip_addr_copy_from_ip4(generic_addr, myIp);
-    err_t err = tcp_connect(myPcb, &generic_addr, port, on_connected);
+    err = tcp_connect(myPcb, &generic_addr, port, on_connected);
 	#else
-	ip4_addr_t myIp;
 	IP4_ADDR(&myIp, ip[0], ip[1], ip[2], ip[3]);
     // Start non-blocking connection
-    err_t err = tcp_connect(myPcb, &myIp, port, on_connected);
+    err = tcp_connect(myPcb, &myIp, port, on_connected);
     #endif
 
-	uint32_t *test = &ip4_addr_get_u32(&myIp);
-	uint8_t test2 = *test & 0xFF;
+	//uint32_t *test = &ip4_addr_get_u32(&myIp);
+	//uint8_t test2 = *test & 0xFF;
 	
-	Serial.println(test2);
+	//Serial.println(test2);
     if (err != ERR_OK) {
-		tcp_abort(myPcb);
+		if(myPcb){
+  		  tcp_abort(myPcb);
+		  myPcb = nullptr;
+		}
 		gState.connected = false;
 		gState.finished = true;
-		myPcb = nullptr;
+
 		return err;
 	}
     uint32_t timeout = millis() + 5000;

@@ -66,12 +66,16 @@ pbuf * RF24EthernetClass::readRXQueue(EthQueue* RXQueue)
   {
     const int ehtFrmLen = RXQueue->len[RXQueue->nRead];
     pbuf* p = pbuf_alloc(PBUF_RAW, MAX_FRAME_SIZE, PBUF_RAM);
+	if(p){
     memcpy(reinterpret_cast<uint8_t*>(p->payload),
             &RXQueue->data[RXQueue->nRead][0],
             ehtFrmLen);
     RXQueue->nRead++;
     RXQueue->nRead %= MAX_RX_QUEUE;
     return p;
+	}else{
+		return nullptr;
+	}
   }
   else
   {
@@ -122,10 +126,8 @@ err_t netif_output(struct netif *netif, struct pbuf *p)
 //Serial.print("net out ");
 //Serial.println(total_len);
   RF24NetworkHeader headerOut(00, EXTERNAL_DATA_TYPE);
-  if(RF24Ethernet.network.write(headerOut, buf, total_len)){
-    return ERR_OK;
-  }else{
-	return -1;
+  if(total_len && total_len < MAX_PAYLOAD_SIZE){
+    RF24Ethernet.network.write(headerOut, buf, total_len);
   }
   return ERR_OK;
 }
@@ -147,7 +149,7 @@ err_t netif_init(struct netif *myNetif)
   myNetif->name[1] = '0';
   myNetif->linkoutput = netif_output;
   myNetif->output     = tun_netif_output;
-  myNetif->mtu        = MAX_PAYLOAD_SIZE;//ETHERNET_MTU;
+  myNetif->mtu        = MAX_PAYLOAD_SIZE-14;//ETHERNET_MTU;
   myNetif->flags      = NETIF_FLAG_BROADCAST |
                       NETIF_FLAG_IGMP |
                       NETIF_FLAG_MLD6 |
@@ -530,7 +532,7 @@ void RF24EthernetClass::tick()
 
 #else  // Using LWIP
 
-  sys_check_timeouts();
+  //sys_check_timeouts();
 
   uint8_t result = RF24Ethernet.network.update();
   if (result == EXTERNAL_DATA_TYPE) {
@@ -541,8 +543,7 @@ void RF24EthernetClass::tick()
 	return;
   }
   
-  
-  //sys_check_timeouts();
+
   
   pbuf *p = readRXQueue(&RXQueue);
   if (p != nullptr)
@@ -553,7 +554,10 @@ void RF24EthernetClass::tick()
       pbuf_free(p);
       p = NULL;
     }
-  }  
+  }else{
+	  
+	 //Serial.println("p is nullptr!!!!!!!!!!!!!!!!!!!!");
+  }
   
 #endif
 }
