@@ -138,6 +138,7 @@ fstate->waiting_for_ack = true;
 			fstate->result = -1;
 			break;			
 		}
+		Ethernet.tick();
     }
 //	Serial.println("blk write 3");
     return fstate->result;
@@ -468,8 +469,8 @@ void RF24Client::stop()
 #else
 	
 if(serverActive){
-    uint32_t timeout = millis() + 10000;
-	while(!gState.finished && gState.waiting_for_ack && millis() < timeout){}//RF24Ethernet.tick();}
+    uint32_t timeout = millis() + 1000;
+	while(!gState.finished && gState.waiting_for_ack && millis() < timeout){ RF24Ethernet.tick();}
     if(myPcb != nullptr){
 	  gState.connected = false;
 	  tcp_close(myPcb);
@@ -580,10 +581,10 @@ test2:
 	}
     char buffer[size];
 	uint32_t position = 0;
-	uint32_t timeout1 = millis() + 5000;
+	uint32_t timeout1 = millis() + 1000;
 	
 	while(size > MAX_PAYLOAD_SIZE-14 && millis() < timeout1){
-		uint32_t timeout = millis() + 5000;
+		uint32_t timeout = millis() + 1000;
 	  while(myPcb->snd_queuelen >= TCP_SND_QUEUELEN && millis() < timeout){
 	    Ethernet.tick();
 	  }
@@ -594,8 +595,8 @@ test2:
 	  Ethernet.tick();
 
     }
-	uint32_t timeout = millis() + 5000;
-	while(myPcb->snd_queuelen >= TCP_SND_QUEUELEN && millis() < timeout){
+	timeout1 = millis() + 1000;
+	while(myPcb->snd_queuelen >= TCP_SND_QUEUELEN && millis() < timeout1){
 	    Ethernet.tick();
 	}
 	memcpy(buffer, &buf[position], size);

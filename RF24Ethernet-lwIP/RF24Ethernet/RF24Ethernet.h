@@ -36,7 +36,7 @@
 	 #endif
   #endif
 #endif
-#if USE_LWIP != 1
+#if USE_LWIP < 1
   extern "C" {
   #include "uip-conf.h"
   #include "utility/uip.h"
