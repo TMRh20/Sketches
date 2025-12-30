@@ -91,7 +91,9 @@ void RF24Server::begin()
     uip_listen(_port);
 	#else		
 
-
+	if(RF24Client::myPcb){
+		delete RF24Client::myPcb;
+	}
   RF24Client::myPcb = tcp_new();
   RF24Client::serverActive = true;
     tcp_err(RF24Client::myPcb, RF24Client::error_callback);
@@ -105,8 +107,7 @@ void RF24Server::begin()
 		Serial.println("unable to bind to port");
     }
 	doOnce = true;
-
-//}
+	
 		RF24Client::gState.finished = false;
 		RF24Client::gState.connected = false;
 		RF24Client::gState.result = 0;

@@ -45,7 +45,7 @@ bool RF24Client::serverActive;
 // Called when the remote host acknowledges receipt of data
 err_t RF24Client::sent_callback(void *arg, struct tcp_pcb *tpcb, u16_t len) {
 
-myPcb = tpcb;
+
 	Serial.println("sent cb");
     ConnectState* state = (ConnectState*)arg;
 	if(state){
@@ -66,7 +66,7 @@ err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, con
 
 	
 	//Serial.println("blk write");
-myPcb = fpcb;
+
 	if (!fpcb || !fstate->connected){
 		Serial.print("tx with no connection: ");
 		Serial.println(fstate->connected);
@@ -158,7 +158,7 @@ err_t RF24Client::srecv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
 //Serial.println("srecv cb");
 
 	ConnectState* state = (ConnectState*)arg;
-	myPcb = tpcb;
+	
     if (p == nullptr) {
         state->connected = false;
         //state->finished = true; // Break the loop
@@ -224,7 +224,7 @@ Serial.println("recv cb");
 err_t RF24Client::accept(void *arg, struct tcp_pcb *tpcb, err_t err) {
 	//Serial.println("acc cb");
 	ConnectState* state = (ConnectState*)arg;
-	myPcb = tpcb;
+
 
 	tcp_recv(tpcb, srecv_callback);
 	tcp_sent(tpcb, sent_callback);
@@ -239,7 +239,7 @@ err_t RF24Client::accept(void *arg, struct tcp_pcb *tpcb, err_t err) {
 
 err_t RF24Client::on_connected(void *arg, struct tcp_pcb *tpcb, err_t err) {
 Serial.println("conn cb");
-myPcb = tpcb;
+
 	ConnectState* state = (ConnectState*)arg;
 	if(state){
       state->result = err;
@@ -334,14 +334,13 @@ if(gState.connected == true || ( myPcb != nullptr && myPcb->state != CLOSED) ){
       return true;
 	}
 	tcp_abort(myPcb);
-	//sys_check_timeouts(); 
     gState.connected = false;
-	//myPcb = nullptr;
-	//Ethernet.tick();
 	return false;
 
 }
-
+		if(myPcb){
+			delete myPcb;
+		}
 		myPcb = tcp_new();
 		if(!myPcb){
 			return 0;
