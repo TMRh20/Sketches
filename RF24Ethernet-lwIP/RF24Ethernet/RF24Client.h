@@ -79,7 +79,10 @@ typedef struct __attribute__((__packed__))
 	#include "RF24Network.h"
 	#define INCOMING_DATA_SIZE MAX_PAYLOAD_SIZE * 2
 	#if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266
+	  extern "C" {		  
 	  #include "lwip\tcp.h"
+	  #include "lwip\tcpip.h"
+	  }
 	#else
       #include <lwIP_Arduino.h>  
       #include "lwip\include\lwip\tcp.h"

@@ -123,12 +123,10 @@ err_t netif_output(struct netif *netif, struct pbuf *p)
     MIB2_STATS_NETIF_INC(netif, ifoutnucastpkts);
   }
 
-//Serial.print("net out ");
-//Serial.println(total_len);
   RF24NetworkHeader headerOut(00, EXTERNAL_DATA_TYPE);
   if(total_len && total_len < MAX_PAYLOAD_SIZE){
     if(!RF24Ethernet.network.write(headerOut, buf, total_len)){
-		return ERR_IF;
+		return ERR_OK;
 	}
   }
   return ERR_OK;

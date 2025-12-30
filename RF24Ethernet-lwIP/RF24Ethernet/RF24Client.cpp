@@ -25,10 +25,11 @@ uip_userdata_t RF24Client::all_data[UIP_CONNS];
 //
 #if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266
   #include "lwip\tcp.h"
+  #include "lwip/tcpip.h"
   #include "lwip/timeouts.h"
 #else
   #include "lwip\include\lwip\tcp.h"
-  #include "lwip\include\lwip\tcp.h"
+  #include "lwip\include\lwip\tcpip.h"
 #endif
 
 #include "RF24Ethernet.h"
@@ -57,6 +58,7 @@ myPcb = tpcb;
 	//state->finished = true;
     return ERR_OK;
 }
+
 
 
 err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, const char* data, size_t len) {
@@ -106,6 +108,7 @@ Serial.print("blk write 1: ");
 		}
 		//Ethernet.tick();
 	}
+
 fstate->waiting_for_ack = true;   
 	err_t err = tcp_write(fpcb, data, len, TCP_WRITE_FLAG_COPY);
 //Ethernet.tick();
@@ -115,10 +118,16 @@ fstate->waiting_for_ack = true;
 	    Serial.println("BLK Write fail 2");		
         return err;
     }
-//Serial.println("blk write 2");
-    tcp_output(fpcb);
+	
 //	Serial.println("blk write 2.2");
-    tcp_sent(fpcb, sent_callback);
+    if(fpcb && fpcb->state != CLOSED && fstate->connected){
+      tcp_sent(fpcb, sent_callback);
+	}else{
+	  Serial.print(" TCP OUT FAIL 2: ");
+	  return ERR_BUF;
+	}
+	
+
 //Serial.println("blk write 0.1");
 //	Serial.println("wait");
 		volatile uint32_t timer = millis() + 1000;
