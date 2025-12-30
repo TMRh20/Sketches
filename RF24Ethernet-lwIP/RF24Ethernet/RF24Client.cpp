@@ -130,7 +130,7 @@ fstate->waiting_for_ack = true;
 
 //Serial.println("blk write 0.1");
 //	Serial.println("wait");
-		volatile uint32_t timer = millis() + 1000;
+	volatile uint32_t timer = millis() + 5000;
     while (fstate->waiting_for_ack && !fstate->finished) {
 		if(millis() > timer){ //Serial.println("blk write 0.2");
 			//fstate->waiting_for_ack = false;
