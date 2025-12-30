@@ -76,7 +76,7 @@ typedef struct __attribute__((__packed__))
     uint8_t myData[OUTPUT_BUFFER_SIZE];
 } uip_userdata_t;
 #else
-	#include "RF24Network.h"
+	#include "RF24Network_config.h"
 	#define INCOMING_DATA_SIZE MAX_PAYLOAD_SIZE * 2
 	#if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266
 	  extern "C" {		  

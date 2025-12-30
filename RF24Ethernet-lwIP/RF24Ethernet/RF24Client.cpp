@@ -37,7 +37,7 @@ uip_userdata_t RF24Client::all_data[UIP_CONNS];
 
 RF24Client::ConnectState RF24Client::gState;
 char RF24Client::incomingData[INCOMING_DATA_SIZE];
-uint16_t RF24Client::dataSize;
+uint16_t RF24Client::dataSize =0;
 struct tcp_pcb* RF24Client::myPcb;
 bool RF24Client::serverActive;
 
