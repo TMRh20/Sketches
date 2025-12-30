@@ -35,10 +35,9 @@ uip_userdata_t RF24Client::all_data[UIP_CONNS];
 
 
 RF24Client::ConnectState RF24Client::gState;
-static char incomingData[MAX_PAYLOAD_SIZE*2] __attribute__((aligned(4)));
-static uint16_t dataSize = 0;
+char RF24Client::incomingData[INCOMING_DATA_SIZE];
+uint16_t RF24Client::dataSize;
 struct tcp_pcb* RF24Client::myPcb;
-//static struct tcp_pcb* sPcb;
 bool RF24Client::serverActive;
 
 
@@ -69,21 +68,35 @@ myPcb = fpcb;
 	if (!fpcb || !fstate->connected){
 		Serial.print("tx with no connection: ");
 		Serial.println(fstate->connected);
+		bool isConnected = false;
 		if(!fpcb){
 			Serial.println("nofpbcb");
 		}else{
-			fpcb = nullptr;
-			myPcb = nullptr;
+			uint32_t timr = millis() + 1000;
+			
+			while(!fstate->connected){
+				Ethernet.tick();
+				if(millis() > timr){
+			      fpcb = nullptr;
+		          myPcb = nullptr;
+				  break;
+				}
+				if(fstate->connected){
+					isConnected = true;
+				}
+			}			
+
 		}
-		
-		return ERR_CLSD;
+		if(!isConnected){
+		  return ERR_CLSD;
+		}
 	}
  
 Serial.print("blk write 1: ");
 	uint16_t available_space = tcp_sndbuf(fpcb);
 	//Serial.println(available_space);
 	//Serial.println(len);
-	uint32_t timeout = millis() + 35000;
+	uint32_t timeout = millis() + 1000;
 	while(len > available_space){
 		Ethernet.tick();
 		
@@ -152,8 +165,12 @@ err_t RF24Client::srecv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
 
     const uint8_t* data = static_cast<const uint8_t*>(p->payload);
 		
-		memcpy(&incomingData[dataSize], data, p->len );
-		dataSize += p->len;
+	if(dataSize + p->len < INCOMING_DATA_SIZE){
+        memcpy(&incomingData[dataSize], data, p->len );
+	    dataSize += p->len;
+	}else{
+		Serial.println("srecv: Out of incoming buffer space");
+	}
 
     // Process data
     tcp_recved(tpcb, p->len);
@@ -180,9 +197,13 @@ Serial.println("recv cb");
     }
 
     const uint8_t* data = static_cast<const uint8_t*>(p->payload);
-		
-		memcpy(&incomingData[dataSize], data, p->len );
-		dataSize += p->len;
+	
+	if(dataSize + p->len < INCOMING_DATA_SIZE){
+        memcpy(&incomingData[dataSize], data, p->len );
+	    dataSize += p->len;
+	}else{
+		Serial.println("recv: Out of incoming buffer space");
+	}
 
     // Process data
     tcp_recved(tpcb, p->len);
@@ -448,7 +469,7 @@ if(serverActive){
 	}
 }else{
 	gState.connected = false;
-	if(myPcb != nullptr){
+	if(myPcb && myPcb->state != CLOSED ){
       tcp_close(myPcb);
 	}
 }
@@ -553,15 +574,15 @@ test2:
 	uint32_t position = 0;
 	uint32_t timeout1 = millis() + 5000;
 	
-	while(size > MAX_PAYLOAD_SIZE && millis() < timeout1){
+	while(size > MAX_PAYLOAD_SIZE-14 && millis() < timeout1){
 		uint32_t timeout = millis() + 5000;
 	  while(myPcb->snd_queuelen >= TCP_SND_QUEUELEN && millis() < timeout){
 	    Ethernet.tick();
 	  }
-      memcpy(buffer, &buf[position], MAX_PAYLOAD_SIZE);
-	  err_t write_err = blocking_write(myPcb, &gState, buffer, MAX_PAYLOAD_SIZE);
-	  position += MAX_PAYLOAD_SIZE;
-	  size -= MAX_PAYLOAD_SIZE;
+      memcpy(buffer, &buf[position], MAX_PAYLOAD_SIZE-14);
+	  err_t write_err = blocking_write(myPcb, &gState, buffer, MAX_PAYLOAD_SIZE-14);
+	  position += MAX_PAYLOAD_SIZE-14;
+	  size -= MAX_PAYLOAD_SIZE-14;
 	  Ethernet.tick();
 
     }

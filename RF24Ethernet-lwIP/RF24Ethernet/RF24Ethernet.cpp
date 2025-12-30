@@ -127,7 +127,6 @@ err_t netif_output(struct netif *netif, struct pbuf *p)
 //Serial.println(total_len);
   RF24NetworkHeader headerOut(00, EXTERNAL_DATA_TYPE);
   if(total_len && total_len < MAX_PAYLOAD_SIZE){
-	  
     if(!RF24Ethernet.network.write(headerOut, buf, total_len)){
 		return ERR_IF;
 	}
@@ -312,9 +311,6 @@ void RF24EthernetClass::configure(IPAddress ip, IPAddress dns, IPAddress gateway
 #endif
 #else
 	
-
-
-
 	ip4_addr_t myIp, myMask , myGateway;
     IP4_ADDR(&myIp, ip[0], ip[1], ip[2], ip[3]);
     IP4_ADDR(&myMask, 255, 255, 255, 0);
@@ -351,7 +347,36 @@ void RF24EthernetClass::listen(uint16_t port)
 	#ifndef USE_LWIP
     uip_listen(HTONS(port));
 	#else
+
+
+  RF24Client::myPcb = tcp_new();
+  RF24Client::serverActive = true;
+    tcp_err(RF24Client::myPcb, RF24Client::error_callback);
+
+///if(!doOnce){
+    //Serial.print("bind to port ");
+	//Serial.println(RF24Server::_port);
+	err_t err = tcp_bind(RF24Client::myPcb, IP_ADDR_ANY, port);
+    if (err != ERR_OK) {
+		//Debug print
+		Serial.println("unable to bind to port");
+    }
+	//doOnce = true;
+
+//}
+		RF24Client::gState.finished = false;
+		RF24Client::gState.connected = false;
+		RF24Client::gState.result = 0;
+	    RF24Client::gState.waiting_for_ack = false;
 		
+		delay(1000);
+		RF24Client::myPcb = tcp_listen(RF24Client::myPcb);
+
+//}
+	
+    tcp_arg(RF24Client::myPcb, &RF24Client::gState);
+    tcp_accept(RF24Client::myPcb, RF24Client::accept);
+
 	#endif
 }
 
@@ -359,14 +384,17 @@ void RF24EthernetClass::listen(uint16_t port)
 
 IPAddress RF24EthernetClass::localIP()
 {
-    IPAddress ret;
-	
 	#ifndef USE_LWIP
     uip_ipaddr_t a;
     uip_gethostaddr(a);
     return ip_addr_uip(a);
 	#else
-    return IPAddress(10,1,3,135);
+    if (netif_is_up(&myNetif)) {
+        // Get the IP address structure
+        const ip4_addr_t *ip_addr = netif_ip4_addr(&myNetif);
+        return(IPAddress(ip_addr->addr));
+    }
+	return IPAddress {0,0,0,0};
 	#endif
 	
 }
@@ -375,13 +403,17 @@ IPAddress RF24EthernetClass::localIP()
 
 IPAddress RF24EthernetClass::subnetMask()
 {
-    IPAddress ret;
 	#ifndef USE_LWIP
     uip_ipaddr_t a;
     uip_getnetmask(a);
     return ip_addr_uip(a);
 	#else
-	return IPAddress(255,255,255,0);	
+    if (netif_is_up(&myNetif)) {
+        // Get the IP address structure
+        const ip4_addr_t *ip_addr = netif_ip4_netmask(&myNetif);
+        return(IPAddress(ip_addr->addr));
+    }
+	return IPAddress {0,0,0,0};
 	#endif
 }
 
@@ -389,13 +421,17 @@ IPAddress RF24EthernetClass::subnetMask()
 
 IPAddress RF24EthernetClass::gatewayIP()
 {
-    IPAddress ret;
 	#ifndef USE_LWIP
     uip_ipaddr_t a;
     uip_getdraddr(a);
     return ip_addr_uip(a);
 	#else
-		return IPAddress(10,1,3,1);	
+    if (netif_is_up(&myNetif)) {
+        // Get the IP address structure
+        const ip4_addr_t *ip_addr = netif_ip4_gw(&myNetif);
+        return(IPAddress(ip_addr->addr));
+    }
+	return IPAddress {0,0,0,0};
 	#endif
 }
 
@@ -535,8 +571,6 @@ void RF24EthernetClass::tick()
 
 #else  // Using LWIP
 
-  //sys_check_timeouts();
-
   uint8_t result = RF24Ethernet.network.update();
   if (result == EXTERNAL_DATA_TYPE) {
     if (RF24Ethernet.network.frag_ptr->message_size > 0) {
@@ -546,7 +580,7 @@ void RF24EthernetClass::tick()
 	return;
   }
   
-
+  sys_check_timeouts();
   
   pbuf *p = readRXQueue(&RXQueue);
   if (p != nullptr)

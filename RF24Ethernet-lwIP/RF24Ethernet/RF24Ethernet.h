@@ -226,7 +226,7 @@ public:
     
     uint32_t networkCorruption;
     
-	static constexpr unsigned MAX_FRAME_SIZE = MAX_PAYLOAD_SIZE;  // packet size excluding FCS
+	static constexpr unsigned MAX_FRAME_SIZE = MAX_PAYLOAD_SIZE-14;  // packet size excluding FCS
 static constexpr unsigned MIN_FRAME_SIZE = 1;
 
 static constexpr unsigned MAX_RX_QUEUE = 5;

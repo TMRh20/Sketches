@@ -76,7 +76,8 @@ typedef struct __attribute__((__packed__))
     uint8_t myData[OUTPUT_BUFFER_SIZE];
 } uip_userdata_t;
 #else
-	//
+	#include "RF24Network.h"
+	#define INCOMING_DATA_SIZE MAX_PAYLOAD_SIZE * 2
 	#if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266
 	  #include "lwip\tcp.h"
 	#else
@@ -196,6 +197,8 @@ static err_t on_connected(void *arg, struct tcp_pcb *tpcb, err_t err);
 static err_t accept(void *arg, struct tcp_pcb *tpcb, err_t err);
 static struct tcp_pcb* myPcb;// = nullptr;//tcp_new();// = nullptr;//tcp_new();
 static bool serverActive;
+static char incomingData[INCOMING_DATA_SIZE];
+static uint16_t dataSize;
 #endif
 
 
