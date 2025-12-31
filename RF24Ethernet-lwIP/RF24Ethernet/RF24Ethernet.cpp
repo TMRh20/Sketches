@@ -123,7 +123,13 @@ err_t netif_output(struct netif *netif, struct pbuf *p)
     MIB2_STATS_NETIF_INC(netif, ifoutnucastpkts);
   }
 
-  RF24NetworkHeader headerOut(00, EXTERNAL_DATA_TYPE);
+  
+    int16_t nodeAddress = Ethernet.mesh.getAddress((char)buf[19]);
+	if(nodeAddress < 0){
+	  nodeAddress = 0;
+	}
+	RF24NetworkHeader headerOut(nodeAddress,EXTERNAL_DATA_TYPE);
+
   if(total_len && total_len < MAX_PAYLOAD_SIZE){
     if(!RF24Ethernet.network.write(headerOut, buf, total_len)){
 		return ERR_OK;
@@ -477,7 +483,7 @@ void RF24EthernetClass::tick()
     #endif
 #endif
 #ifndef USE_LWIP
-    uint8_t result = RF24Ethernet.network.update();  
+    uint8_t result = RF24Ethernet.mesh.update();  
       
     if (result == EXTERNAL_DATA_TYPE) {
         if (RF24Ethernet.network.frag_ptr->message_size <= UIP_BUFSIZE && RF24Ethernet.network.frag_ptr->message_size >= 20) {
@@ -569,7 +575,7 @@ void RF24EthernetClass::tick()
 
 #else  // Using LWIP
 
-  uint8_t result = RF24Ethernet.network.update();
+  uint8_t result = RF24Ethernet.mesh.update();
   if (result == EXTERNAL_DATA_TYPE) {
     if (RF24Ethernet.network.frag_ptr->message_size > 0) {
       uint16_t len = RF24Ethernet.network.frag_ptr->message_size;

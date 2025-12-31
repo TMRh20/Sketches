@@ -109,13 +109,18 @@ Serial.print("blk write 1: ");
 		//Ethernet.tick();
 	}
 
-fstate->waiting_for_ack = true;   
+fstate->waiting_for_ack = true;
+
+Serial.println("len ");
+Serial.println(len);
 	err_t err = tcp_write(fpcb, data, len, TCP_WRITE_FLAG_COPY);
 //Ethernet.tick();
     if (err != ERR_OK) {
         fstate->waiting_for_ack = false;
 		fstate->finished = true;
-	    Serial.println("BLK Write fail 2");		
+	    Serial.print("BLK Write fail 2: ");
+		Serial.println((int)err);
+
         return err;
     }
 	
@@ -225,7 +230,7 @@ Serial.println("recv cb");
 err_t RF24Client::accept(void *arg, struct tcp_pcb *tpcb, err_t err) {
 	//Serial.println("acc cb");
 	ConnectState* state = (ConnectState*)arg;
-
+    myPcb = tpcb;
 
 	tcp_recv(tpcb, srecv_callback);
 	tcp_sent(tpcb, sent_callback);

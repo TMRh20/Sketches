@@ -74,6 +74,7 @@
 #endif
 #include <RF24.h>
 #include <RF24Network.h>
+#include <RF24Mesh.h>
 #if !defined(RF24_TAP) // Using RF24Mesh
     #include <RF24Mesh.h>
 #endif
@@ -227,7 +228,7 @@ public:
     uint32_t networkCorruption;
     
 	static constexpr unsigned MAX_FRAME_SIZE = MAX_PAYLOAD_SIZE-14;  // packet size excluding FCS
-static constexpr unsigned MIN_FRAME_SIZE = 1;
+static constexpr unsigned MIN_FRAME_SIZE = 0;
 
 static constexpr unsigned MAX_RX_QUEUE = 5;
 

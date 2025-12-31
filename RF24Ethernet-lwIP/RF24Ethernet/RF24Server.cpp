@@ -68,7 +68,9 @@ void RF24Server::restart()
 {
 	
 	if(RF24Client::myPcb){
-		tcp_close(RF24Client::myPcb);
+		if( RF24Client::myPcb->state == ESTABLISHED || RF24Client::myPcb->state == SYN_SENT || RF24Client::myPcb->state == SYN_RCVD  ){
+		  tcp_close(RF24Client::myPcb);
+		}
 		Ethernet.tick();
 	}
   RF24Client::myPcb = tcp_new();
@@ -95,7 +97,10 @@ void RF24Server::begin()
 	#else		
 
 	if(RF24Client::myPcb){
-		delete RF24Client::myPcb;
+		if( RF24Client::myPcb->state == ESTABLISHED || RF24Client::myPcb->state == SYN_SENT || RF24Client::myPcb->state == SYN_RCVD  ){
+		  tcp_close(RF24Client::myPcb);
+		}
+		Ethernet.tick();
 	}
   RF24Client::myPcb = tcp_new();
   RF24Client::serverActive = true;
