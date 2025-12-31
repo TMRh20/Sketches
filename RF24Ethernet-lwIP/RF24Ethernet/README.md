@@ -5,7 +5,13 @@
 
 ## Easily create home automation scenarios and sensor networks
 
-### Updated 2023:
+### Updated 2026:
+
+RF24Ethernet now supports the lwIP stack!
+
+Faster devices (>50mHz) will automatically use the lwIP stack instead of the uIP stack, providing a better, faster and more reliable way to connect.
+
+To define manually, #define USE_LWIP 1 or edit the RF24Ethernet.h file and add #define USE_LWIP 1
 
 RF24Ethernet requires the RF24, RF24Network and RF24Mesh libraries
 
