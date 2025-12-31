@@ -607,7 +607,12 @@ void RF24EthernetClass::tick()
 
 void RF24EthernetClass::network_send()
 {
-    RF24NetworkHeader headerOut(00, EXTERNAL_DATA_TYPE);
+    //RF24NetworkHeader headerOut(00, EXTERNAL_DATA_TYPE);
+    int16_t nodeAddress = Ethernet.mesh.getAddress((char)uip_buf[19]);
+	if(nodeAddress < 0){
+	  nodeAddress = 0;
+	}
+	RF24NetworkHeader headerOut(nodeAddress,EXTERNAL_DATA_TYPE);
 
 #ifndef USE_LWIP
 #if defined ETH_DEBUG_L1 || defined ETH_DEBUG_L2
