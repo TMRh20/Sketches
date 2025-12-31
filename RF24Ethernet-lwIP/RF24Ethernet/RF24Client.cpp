@@ -466,15 +466,19 @@ void RF24Client::stop()
 if(serverActive){
     uint32_t timeout = millis() + 1000;
 	while(!gState.finished && gState.waiting_for_ack && millis() < timeout){ RF24Ethernet.tick();}
-    if(myPcb != nullptr){
+	if(myPcb){
+    if( myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD  ){
 	  gState.connected = false;
-	  tcp_close(myPcb);
-	  RF24Server::restart();
+	  tcp_close(myPcb);	  
 	}
+	}
+	RF24Server::restart();
 }else{
 	gState.connected = false;
+	if(myPcb){
 	if( myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD  ){
       tcp_close(myPcb);
+	}
 	}
 }
 	
