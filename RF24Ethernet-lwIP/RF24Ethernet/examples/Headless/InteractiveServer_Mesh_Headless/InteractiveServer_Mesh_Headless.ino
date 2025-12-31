@@ -65,7 +65,7 @@ void setup() {
   Ethernet.begin(myIP);
 
   //Set IP of the RPi (gateway)
-  IPAddress gwIP(10, 1, 3, 2);
+  IPAddress gwIP(10, 1, 3, 1);
   Ethernet.set_gateway(gwIP);
 
   // Make this a Master node
