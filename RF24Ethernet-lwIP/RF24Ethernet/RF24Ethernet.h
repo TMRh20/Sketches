@@ -51,7 +51,7 @@
   #include "RF24Client.h"
   #include "RF24Server.h"
 
-  #if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266
+  #if !defined ETHERNET_USING_LWIP_ARDUINO
     #include "lwip\ip.h"
 	#include "lwip\stats.h"
 	#include "lwip\netif.h"
