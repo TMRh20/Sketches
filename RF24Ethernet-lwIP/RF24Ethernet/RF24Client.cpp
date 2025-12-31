@@ -330,22 +330,17 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
 #endif // Active open enabled
 #else
 
-if(gState.connected == true || ( myPcb != nullptr && myPcb->state != CLOSED) ){
-	if(myPcb != nullptr && myPcb->state != CLOSED){
-      return true;
+if( myPcb != nullptr ){
+	if( myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD  ){
+	  tcp_close(myPcb);
+	  Ethernet.tick();
+      return false;
 	}
-	tcp_abort(myPcb);
-    gState.connected = false;
-	return false;
-
 }
-		if(myPcb){
-			delete myPcb;
-		}
+		
 		myPcb = tcp_new();
 		if(!myPcb){
-			return 0;
-			
+			return 0;			
 		}
 		dataSize = 0;
 	    memset(incomingData,0,sizeof(incomingData));
@@ -478,7 +473,7 @@ if(serverActive){
 	}
 }else{
 	gState.connected = false;
-	if(myPcb && myPcb->state != CLOSED ){
+	if( myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD  ){
       tcp_close(myPcb);
 	}
 }

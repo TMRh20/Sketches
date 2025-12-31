@@ -67,7 +67,10 @@ RF24Client RF24Server::available()
 void RF24Server::restart()
 {
 	
-	
+	if(RF24Client::myPcb){
+		tcp_close(RF24Client::myPcb);
+		Ethernet.tick();
+	}
   RF24Client::myPcb = tcp_new();
 
     tcp_err(RF24Client::myPcb, RF24Client::error_callback);
