@@ -123,11 +123,28 @@ err_t netif_output(struct netif *netif, struct pbuf *p)
     MIB2_STATS_NETIF_INC(netif, ifoutnucastpkts);
   }
 
-  
-    int16_t nodeAddress = Ethernet.mesh.getAddress((char)buf[19]);
-	if(nodeAddress < 0){
-	  nodeAddress = 0;
-	}
+    IPAddress gwIP = Ethernet.gatewayIP();
+	int16_t nodeAddress = 0;
+	
+	//If not sending to the gatway
+	
+	if(Ethernet.mesh.mesh_address != 0){
+ 	  if(gwIP[3] != buf[19]){
+	    	//Request an address lookup from the Master node
+		  nodeAddress = Ethernet.mesh.getAddress((char)buf[19]);
+	      if(nodeAddress < 0){
+	        nodeAddress = 0;
+		  }
+	  }
+	}else{
+		nodeAddress = Ethernet.mesh.getAddress((char)buf[19]);
+		if(nodeAddress < 0){
+			return -1;
+		}
+    }
+	
+	Serial.print("Net out: ");
+	Serial.println(nodeAddress,OCT);
 	RF24NetworkHeader headerOut(nodeAddress,EXTERNAL_DATA_TYPE);
 
   if(total_len && total_len < MAX_PAYLOAD_SIZE){
@@ -359,7 +376,9 @@ void RF24EthernetClass::listen(uint16_t port)
     uip_listen(HTONS(port));
 	#else
 
-/*
+  #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+	LOCK_TCPIP_CORE();
+  #endif
   RF24Client::myPcb = tcp_new();
   RF24Client::serverActive = true;
     tcp_err(RF24Client::myPcb, RF24Client::error_callback);
@@ -387,7 +406,9 @@ void RF24EthernetClass::listen(uint16_t port)
 	
     tcp_arg(RF24Client::myPcb, &RF24Client::gState);
     tcp_accept(RF24Client::myPcb, RF24Client::accept);
-*/
+  #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+	UNLOCK_TCPIP_CORE();
+  #endif
 	#endif
 }
 
@@ -587,6 +608,7 @@ void RF24EthernetClass::tick()
     if (RF24Ethernet.network.frag_ptr->message_size > 0) {
       uint16_t len = RF24Ethernet.network.frag_ptr->message_size;
 	  Ethernet.EthRX_Handler(RF24Ethernet.network.frag_ptr->message_buffer, len);
+	Serial.println("Net in");
 	}
 	return;
   }
@@ -619,10 +641,23 @@ void RF24EthernetClass::network_send()
 {
 	
 #ifndef USE_LWIP
-    int16_t nodeAddress = Ethernet.mesh.getAddress((char)uip_buf[19]);
-	if(nodeAddress < 0){
-	  nodeAddress = 0;
-	}
+    IPAddress gwIP = Ethernet.gatewayIP();
+	int16_t nodeAddress = 0;
+	
+	if(Ethernet.mesh.mesh_address != 0){
+ 	  if(gwIP[3] != buf[19]){
+	    	//Request an address lookup from the Master node
+		  nodeAddress = Ethernet.mesh.getAddress((char)buf[19]);
+	      if(nodeAddress < 0){
+	        nodeAddress = 0;
+		  }
+	  }
+	}else{
+		nodeAddress = Ethernet.mesh.getAddress((char)buf[19]);
+		if(nodeAddress < 0){
+			return -1;
+		}
+    }
 	RF24NetworkHeader headerOut(nodeAddress,EXTERNAL_DATA_TYPE);
 
 

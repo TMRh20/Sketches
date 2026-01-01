@@ -244,8 +244,6 @@ Serial.println("recv cb");
  
     // Process data
     tcp_recved(tpcb, p->len);
-
-  Serial.println("recv cb3");
     pbuf_free(p);
     return ERR_OK;
 }
