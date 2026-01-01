@@ -45,7 +45,10 @@
   }
 #else
 
-
+  #if defined ARDUINO_ARCH_ESP32
+	#define RF24ETHERNET_CORE_REQUIRES_LOCKING
+  #endif
+  
   #include "ethernet_comp.h"
   //#include "IPAddress.h"
   #include "RF24Client.h"
@@ -228,7 +231,7 @@ public:
     uint32_t networkCorruption;
     
 	static constexpr unsigned MAX_FRAME_SIZE = MAX_PAYLOAD_SIZE-14;  // packet size excluding FCS
-static constexpr unsigned MIN_FRAME_SIZE = 0;
+static constexpr unsigned MIN_FRAME_SIZE = 4;
 
 static constexpr unsigned MAX_RX_QUEUE = 5;
 

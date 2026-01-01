@@ -66,24 +66,30 @@ RF24Client RF24Server::available()
 #if USE_LWIP == 1
 void RF24Server::restart()
 {
-	
+
+	#if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+	  LOCK_TCPIP_CORE();
+	#endif	
 	if(RF24Client::myPcb){
 		if( RF24Client::myPcb->state == ESTABLISHED || RF24Client::myPcb->state == SYN_SENT || RF24Client::myPcb->state == SYN_RCVD  ){
 		  tcp_close(RF24Client::myPcb);
 		}
 		Ethernet.tick();
 	}
-  RF24Client::myPcb = tcp_new();
+
+    RF24Client::myPcb = tcp_new();
 
     tcp_err(RF24Client::myPcb, RF24Client::error_callback);
 
     //Serial.print("already bound to port ");
 	//Serial.println(RF24Server::_port);
     RF24Client::myPcb = tcp_listen(RF24Client::myPcb);
-	
+
     tcp_arg(RF24Client::myPcb, &RF24Client::gState);
     tcp_accept(RF24Client::myPcb, RF24Client::accept);
-
+    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+	  UNLOCK_TCPIP_CORE();
+	#endif
 
     RF24Ethernet.tick();
 }
@@ -96,20 +102,26 @@ void RF24Server::begin()
     uip_listen(_port);
 	#else		
 
+	#if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+      LOCK_TCPIP_CORE();
+    #endif
 	if(RF24Client::myPcb){
 		if( RF24Client::myPcb->state == ESTABLISHED || RF24Client::myPcb->state == SYN_SENT || RF24Client::myPcb->state == SYN_RCVD  ){
 		  tcp_close(RF24Client::myPcb);
 		}
 		Ethernet.tick();
 	}
-  RF24Client::myPcb = tcp_new();
-  RF24Client::serverActive = true;
+
+    RF24Client::myPcb = tcp_new();
+    RF24Client::serverActive = true;
     tcp_err(RF24Client::myPcb, RF24Client::error_callback);
+
 
 ///if(!doOnce){
     //Serial.print("bind to port ");
 	//Serial.println(RF24Server::_port);
 	err_t err = tcp_bind(RF24Client::myPcb, IP_ADDR_ANY, RF24Server::_port);
+
     if (err != ERR_OK) {
 		//Debug print
 		Serial.println("unable to bind to port");
@@ -120,15 +132,16 @@ void RF24Server::begin()
 		RF24Client::gState.connected = false;
 		RF24Client::gState.result = 0;
 	    RF24Client::gState.waiting_for_ack = false;
-		
-		delay(1000);
-		RF24Client::myPcb = tcp_listen(RF24Client::myPcb);
 
-//}
-	
+
+	RF24Client::myPcb = tcp_listen(RF24Client::myPcb);
+
     tcp_arg(RF24Client::myPcb, &RF24Client::gState);
     tcp_accept(RF24Client::myPcb, RF24Client::accept);
-
+    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+	  UNLOCK_TCPIP_CORE();
+	#endif
+	
 	#endif
     RF24Ethernet.tick();
 }

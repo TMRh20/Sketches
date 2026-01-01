@@ -322,9 +322,16 @@ void RF24EthernetClass::configure(IPAddress ip, IPAddress dns, IPAddress gateway
 	_dnsServerAddress = dns;
 	
 	void * context = nullptr;
+	#if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+	  LOCK_TCPIP_CORE();
+	#endif
 	netif_add(&Ethernet.myNetif, &myIp, &myMask, &myGateway, context, netif_init, ip_input);
     netif_set_default(&Ethernet.myNetif);
     netif_set_up(&Ethernet.myNetif);
+	#if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+	  UNLOCK_TCPIP_CORE();
+	#endif  
+	
 	
 #endif
 }
@@ -352,7 +359,7 @@ void RF24EthernetClass::listen(uint16_t port)
     uip_listen(HTONS(port));
 	#else
 
-
+/*
   RF24Client::myPcb = tcp_new();
   RF24Client::serverActive = true;
     tcp_err(RF24Client::myPcb, RF24Client::error_callback);
@@ -380,7 +387,7 @@ void RF24EthernetClass::listen(uint16_t port)
 	
     tcp_arg(RF24Client::myPcb, &RF24Client::gState);
     tcp_accept(RF24Client::myPcb, RF24Client::accept);
-
+*/
 	#endif
 }
 
@@ -584,8 +591,11 @@ void RF24EthernetClass::tick()
 	return;
   }
   
+  #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+    LOCK_TCPIP_CORE();
+  #endif
   sys_check_timeouts();
-  
+
   pbuf *p = readRXQueue(&RXQueue);
   if (p != nullptr)
   {
@@ -595,10 +605,10 @@ void RF24EthernetClass::tick()
       pbuf_free(p);
       p = NULL;
     }
-  }else{
-	  
-	 //Serial.println("p is nullptr!!!!!!!!!!!!!!!!!!!!");
   }
+  #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+	UNLOCK_TCPIP_CORE();
+  #endif
   
 #endif
 }
