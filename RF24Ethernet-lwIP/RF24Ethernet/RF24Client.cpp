@@ -303,15 +303,42 @@ err_t RF24Client::serverTimeouts(void *arg, struct tcp_pcb *tpcb){
 	
 }
 
+err_t RF24Client::closed_port(void *arg, struct tcp_pcb *tpcb){
+	
+	if((tpcb->state == ESTABLISHED || tpcb->state == SYN_SENT || tpcb->state == SYN_RCVD)){
+  #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+	LOCK_TCPIP_CORE();
+  #endif
+		tcp_close(tpcb);
+  #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+	UNLOCK_TCPIP_CORE();
+  #endif
+		Serial.println("CLosed polled PCB");		
+	}
+	return ERR_OK;
+}
+
+
 /**************************************************************************************************/
 
 err_t RF24Client::accept(void *arg, struct tcp_pcb *tpcb, err_t err) {
 	Serial.println("acc cb");
 	ConnectState* state = (ConnectState*)arg;
 	
-	//if(!(myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD)){
+  if(myPcb != nullptr){	
+	if((myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD)){
 	//	maxConns = false;
-	//}
+		Serial.println("got ACC with already conn");
+  #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+	UNLOCK_TCPIP_CORE();
+  #endif
+		tcp_poll(tpcb, closed_port, 10);
+  #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+	UNLOCK_TCPIP_CORE();
+  #endif
+		return ERR_OK;
+	}
+  }
  
   #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
 	LOCK_TCPIP_CORE();
