@@ -27,10 +27,10 @@ class RF24Server : public Server
 
 public:
     RF24Server(uint16_t);
-	RF24Server();
+    RF24Server();
     RF24Client available();
     void begin();
-	static void restart();
+    static void restart();
 #if defined(ESP32)
     /* on esp32 this is a pure virtual func */
     void begin(uint16_t port);
@@ -41,15 +41,15 @@ public:
     void setTimeout(uint32_t timeout);
     static bool doOnce;
     static struct tcp_pcb* sPcb;
-	static struct tcp_pcb* bindPcb;
-	
+    static struct tcp_pcb* bindPcb;
+
 private:
-    #ifdef USE_LWIP
-	  static uint16_t _port;
-	  
-	#else
-	  uint16_t _port;
-	#endif
+#ifdef USE_LWIP
+    static uint16_t _port;
+
+#else
+    uint16_t _port;
+#endif
 };
 
 #endif

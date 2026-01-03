@@ -30,44 +30,40 @@
 
 #include <Arduino.h>
 #if (!defined F_CPU || F_CPU > 50000000)
-  #if !defined ARDUINO_ARCH_RP2040 && !defined ARDUINO_ARCH_RP2350
-    #ifndef USE_LWIP
-      #define USE_LWIP 1
-	 #endif
-  #endif
+    #if !defined ARDUINO_ARCH_RP2040 && !defined ARDUINO_ARCH_RP2350
+        #ifndef USE_LWIP
+            #define USE_LWIP 1
+        #endif
+    #endif
 #endif
 #if USE_LWIP < 1
-  extern "C" {
-  #include "uip-conf.h"
-  #include "utility/uip.h"
-  #include "utility/uiptimer.h"
-  #include "utility/uip_arp.h"
-  }
+extern "C" {
+    #include "uip-conf.h"
+    #include "utility/uip.h"
+    #include "utility/uiptimer.h"
+    #include "utility/uip_arp.h"
+}
 #else
 
-  #if defined ARDUINO_ARCH_ESP32
-	#define RF24ETHERNET_CORE_REQUIRES_LOCKING
-  #endif
-  
-  #include "ethernet_comp.h"
-  //#include "IPAddress.h"
-  #include "RF24Client.h"
-  #include "RF24Server.h"
+    #if defined ARDUINO_ARCH_ESP32
+        #define RF24ETHERNET_CORE_REQUIRES_LOCKING
+    #endif
 
-  #if !defined ETHERNET_USING_LWIP_ARDUINO
-    #include "lwip\ip.h"
-	#include "lwip\stats.h"
-	#include "lwip\netif.h"
-	#include "lwip\snmp.h"
-	#include "lwip\timeouts.h"
-  #else
-	#include <lwIP_Arduino.h>  
-    #include "lwip\include\lwip\ip.h"
-  #endif
+    #include "ethernet_comp.h"
+    //#include "IPAddress.h"
+    #include "RF24Client.h"
+    #include "RF24Server.h"
 
-
-
-  
+    #if !defined ETHERNET_USING_LWIP_ARDUINO
+        #include "lwip\ip.h"
+        #include "lwip\stats.h"
+        #include "lwip\netif.h"
+        #include "lwip\snmp.h"
+        #include "lwip\timeouts.h"
+    #else
+        #include <lwIP_Arduino.h>
+        #include "lwip\include\lwip\ip.h"
+    #endif
 
 #endif
 
@@ -83,49 +79,49 @@
 #endif
 
 #if USE_LWIP != 1
-#include "ethernet_comp.h"
-#include "IPAddress.h"
-#include "RF24Client.h"
-#include "RF24Server.h"
+    #include "ethernet_comp.h"
+    #include "IPAddress.h"
+    #include "RF24Client.h"
+    #include "RF24Server.h"
 
-#if UIP_CONF_UDP > 0
-    #include "RF24Udp.h"
-    #include "Dns.h"
-#endif
+    #if UIP_CONF_UDP > 0
+        #include "RF24Udp.h"
+        #include "Dns.h"
+    #endif
 
-#define UIPETHERNET_FREEPACKET 1
-#define UIPETHERNET_SENDPACKET 2
+    #define UIPETHERNET_FREEPACKET 1
+    #define UIPETHERNET_SENDPACKET 2
 
-//#define TUN  // Use only the tcp protocol, no ethernet headers or arps
-#define TAP // Include ethernet headers
+    //#define TUN  // Use only the tcp protocol, no ethernet headers or arps
+    #define TAP // Include ethernet headers
 
-#if defined(TAP)
-    #define BUF ((struct uip_eth_hdr*)&uip_buf[0])
-#endif
-//#define BUF ((struct uip_tcpip_hdr *)&uip_buf[UIP_LLH_LEN])
+    #if defined(TAP)
+        #define BUF ((struct uip_eth_hdr*)&uip_buf[0])
+    #endif
+    //#define BUF ((struct uip_tcpip_hdr *)&uip_buf[UIP_LLH_LEN])
 
-#define uip_seteth_addr(eaddr)          \
-    do {                                \
-        uip_ethaddr.addr[0] = eaddr[0]; \
-        uip_ethaddr.addr[1] = eaddr[1]; \
-        uip_ethaddr.addr[2] = eaddr[2]; \
-        uip_ethaddr.addr[3] = eaddr[3]; \
-        uip_ethaddr.addr[4] = eaddr[4]; \
-        uip_ethaddr.addr[5] = eaddr[5]; \
-    } while (0)
-#define uip_ip_addr(addr, ip) memcpy(addr, &ip[0], 4)
+    #define uip_seteth_addr(eaddr)          \
+        do {                                \
+            uip_ethaddr.addr[0] = eaddr[0]; \
+            uip_ethaddr.addr[1] = eaddr[1]; \
+            uip_ethaddr.addr[2] = eaddr[2]; \
+            uip_ethaddr.addr[3] = eaddr[3]; \
+            uip_ethaddr.addr[4] = eaddr[4]; \
+            uip_ethaddr.addr[5] = eaddr[5]; \
+        } while (0)
+    #define uip_ip_addr(addr, ip) memcpy(addr, &ip[0], 4)
 
-#define ip_addr_uip(a) IPAddress(a[0] & 0xFF, a[0] >> 8, a[1] & 0xFF, a[1] >> 8) // TODO this is not IPV6 capable
+    #define ip_addr_uip(a) IPAddress(a[0] & 0xFF, a[0] >> 8, a[1] & 0xFF, a[1] >> 8) // TODO this is not IPV6 capable
 
-#define uip_seteth_addr(eaddr)          \
-    do {                                \
-        uip_ethaddr.addr[0] = eaddr[0]; \
-        uip_ethaddr.addr[1] = eaddr[1]; \
-        uip_ethaddr.addr[2] = eaddr[2]; \
-        uip_ethaddr.addr[3] = eaddr[3]; \
-        uip_ethaddr.addr[4] = eaddr[4]; \
-        uip_ethaddr.addr[5] = eaddr[5]; \
-    } while (0)
+    #define uip_seteth_addr(eaddr)          \
+        do {                                \
+            uip_ethaddr.addr[0] = eaddr[0]; \
+            uip_ethaddr.addr[1] = eaddr[1]; \
+            uip_ethaddr.addr[2] = eaddr[2]; \
+            uip_ethaddr.addr[3] = eaddr[3]; \
+            uip_ethaddr.addr[4] = eaddr[4]; \
+            uip_ethaddr.addr[5] = eaddr[5]; \
+        } while (0)
 
 #else
 
@@ -227,27 +223,26 @@ public:
     /** Keeps the TCP/IP stack running & processing incoming data */
     void update();
     // uint8_t *key;
-    
+
     uint32_t networkCorruption;
-    
-	static constexpr unsigned MAX_FRAME_SIZE = MAX_PAYLOAD_SIZE-14;  // packet size excluding FCS
-static constexpr unsigned MIN_FRAME_SIZE = 4;
 
-static constexpr unsigned MAX_RX_QUEUE = 5;
+    static constexpr unsigned MAX_FRAME_SIZE = MAX_PAYLOAD_SIZE; // packet size excluding FCS
+    static constexpr unsigned MIN_FRAME_SIZE = 4;
 
+    static constexpr unsigned MAX_RX_QUEUE = 5;
 
-struct EthQueue
-{
-  uint8_t data[MAX_RX_QUEUE][MAX_FRAME_SIZE];
-  uint16_t len[MAX_RX_QUEUE];
-  uint32_t nRead;
-  uint32_t nWrite;
-};
-static EthQueue RXQueue __attribute__((aligned(4)));
+    struct EthQueue
+    {
+        uint8_t data[MAX_RX_QUEUE][MAX_FRAME_SIZE];
+        uint16_t len[MAX_RX_QUEUE];
+        uint32_t nRead;
+        uint32_t nWrite;
+    };
+    static EthQueue RXQueue __attribute__((aligned(4)));
 
-typedef uint32_t err_t;
-static bool isUnicast(const uint8_t frame);
-  
+    typedef uint32_t err_t;
+    static bool isUnicast(const uint8_t frame);
+
 #if !defined NRF52_RADIO_LIBRARY
     RF24Network& network;
     #if !defined(RF24_TAP) // Using RF24Mesh
@@ -261,24 +256,22 @@ static bool isUnicast(const uint8_t frame);
 #endif
 
 #if USE_LWIP == 1
-static constexpr uint16_t ETHERNET_MTU = 1500;
-static constexpr uint32_t NetIF_Speed_BPS = 1000000;
-static constexpr uint8_t MacAddr[6] = {0,1,2,3,4};
-  static void initRXQueue(EthQueue* RXQueue);
-  static void writeRXQueue(EthQueue* RXQueue, const uint8_t *ethFrame, uint16_t lenEthFrame);
-  static pbuf * readRXQueue(EthQueue* RXQueue);
+    static constexpr uint16_t ETHERNET_MTU = 1500;
+    static constexpr uint32_t NetIF_Speed_BPS = 1000000;
+    static constexpr uint8_t MacAddr[6] = {0, 1, 2, 3, 4};
+    static void initRXQueue(EthQueue* RXQueue);
+    static void writeRXQueue(EthQueue* RXQueue, const uint8_t* ethFrame, uint16_t lenEthFrame);
+    static pbuf* readRXQueue(EthQueue* RXQueue);
 
-  static void EthRX_Handler(const uint8_t * ethFrame, const uint16_t lenEthFrame);
-  //err_t netif_output(struct netif *myNetif, struct pbuf *p);
-  //static err_t netif_init(struct netif *myNetif);
-  //err_t tun_netif_output(struct netif *netif, struct pbuf *p, const ip4_addr_t *ipaddr);
-  //volatile uint8_t isConnected = 0;
-  static bool isConnected;
-  static bool dataBufferEmpty;
+    static void EthRX_Handler(const uint8_t* ethFrame, const uint16_t lenEthFrame);
+    //err_t netif_output(struct netif *myNetif, struct pbuf *p);
+    //static err_t netif_init(struct netif *myNetif);
+    //err_t tun_netif_output(struct netif *netif, struct pbuf *p, const ip4_addr_t *ipaddr);
+    //volatile uint8_t isConnected = 0;
+    static bool isConnected;
+    static bool dataBufferEmpty;
 
-
-
-  static netif myNetif;  
+    static netif myNetif;
 #endif
 
 private:
@@ -288,10 +281,8 @@ private:
     RF24& radio;
 #endif
 
-
     static IPAddress _dnsServerAddress;
     void configure(IPAddress ip, IPAddress dns, IPAddress gateway, IPAddress subnet);
-
 
     // tick() must be called at regular intervals to process the incoming serial
     // data and issue IP events to the sketch.  It does not return until all IP
@@ -303,17 +294,15 @@ private:
 
 #if USE_LWIP != 1
     struct timer periodic_timer;
-#if defined RF24_TAP
+    #if defined RF24_TAP
     struct timer arp_timer;
-#endif
+    #endif
 #endif
 
     friend class RF24Server;
     friend class RF24Client;
     friend class RF24UDP;
 };
-
-
 
 extern RF24EthernetClass RF24Ethernet;
 

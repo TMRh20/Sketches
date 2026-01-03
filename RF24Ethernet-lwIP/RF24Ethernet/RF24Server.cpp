@@ -24,22 +24,20 @@ extern "C" {
 //#include "uip-conf.h"
 }
 
-
-
 /*************************************************************/
 #if USE_LWIP != 1
 RF24Server::RF24Server(uint16_t port) : _port(htons(port))
 {
 }
 #else
-uint16_t RF24Server::_port; 
+uint16_t RF24Server::_port;
 struct tcp_pcb* RF24Server::sPcb;
 bool RF24Server::doOnce;
 
 RF24Server::RF24Server(uint16_t port)
 {
- _port = port;
- RF24Client::sConnectionTimeout = 30000;
+    _port = port;
+    //RF24Client::sConnectionTimeout = 30000;
 }
 
 #endif
@@ -48,8 +46,8 @@ RF24Server::RF24Server(uint16_t port)
 RF24Client RF24Server::available()
 {
 
-	Ethernet.tick();
-	#if USE_LWIP != 1
+    Ethernet.tick();
+#if USE_LWIP != 1
     for (uip_userdata_t* data = &RF24Client::all_data[0]; data < &RF24Client::all_data[UIP_CONNS]; data++)
     {
         if (data->packets_in != 0 && (((data->state & UIP_CLIENT_CONNECTED) && uip_conns[data->state & UIP_CLIENT_SOCKETS].lport == _port) || ((data->state & UIP_CLIENT_REMOTECLOSED) && ((uip_userdata_closed_t*)data)->lport == _port)))
@@ -57,116 +55,119 @@ RF24Client RF24Server::available()
             return RF24Client(data);
         }
     }
-	#else
-		uint32_t data = 1;
-		return RF24Client(data);
-	#endif
+#else
+    uint32_t data = 1;
+    return RF24Client(data);
+#endif
     return RF24Client();
 }
 
-void RF24Server::restart(){
-	
-	#if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-      LOCK_TCPIP_CORE();
-    #endif
-	if(sPcb){
-		if( sPcb->state == ESTABLISHED || sPcb->state == SYN_SENT || sPcb->state == SYN_RCVD  ){
-		  tcp_close(sPcb);
-		}
-		Ethernet.tick();
-	}
+void RF24Server::restart()
+{
 
-    //if(!sPcb){
-      sPcb = tcp_new();
-    
-	RF24Client::serverActive = true;
+#if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+    LOCK_TCPIP_CORE();
+#endif
+    if (sPcb) {
+        if (sPcb->state == ESTABLISHED || sPcb->state == SYN_SENT || sPcb->state == SYN_RCVD) {
+            tcp_close(sPcb);
+        }
+        Ethernet.tick();
+    }
+
+    if (RF24Client::delayedState == nullptr) {
+        RF24Client::delayedState = new RF24Client::ConnectState;
+    }
+    sPcb = tcp_new();
+    if (RF24Client::closedPcb == nullptr) {
+        RF24Client::closedPcb = tcp_new();
+    }
+
+    RF24Client::serverActive = true;
     tcp_err(sPcb, RF24Client::error_callback);
 
+    if (!doOnce) {
+        //Serial.print("bind to port ");
+        //Serial.println(RF24Server::_port);
+        //ip_set_option(sPcb, SOF_REUSEADDR);
+        err_t err = tcp_bind(sPcb, IP_ADDR_ANY, RF24Server::_port);
 
-  if(!doOnce){
-    //Serial.print("bind to port ");
-	//Serial.println(RF24Server::_port);
-	//ip_set_option(sPcb, SOF_REUSEADDR);
-	err_t err = tcp_bind(sPcb, IP_ADDR_ANY, RF24Server::_port);
-
-    if (err != ERR_OK) {
-		//Debug print
-		Serial.println("unable to bind to port");
+        if (err != ERR_OK) {
+            //Debug print
+            Serial.println("unable to bind to port");
+        }
     }
-	}
-	doOnce = true;
-		if(RF24Client::gState == nullptr){
-			RF24Client::gState = new RF24Client::ConnectState;
-		}
-		RF24Client::gState->finished = false;
-		RF24Client::gState->connected = false;
-		RF24Client::gState->result = 0;
-	    RF24Client::gState->waiting_for_ack = false;
+    doOnce = true;
+    if (RF24Client::gState == nullptr) {
+        RF24Client::gState = new RF24Client::ConnectState;
+    }
+    RF24Client::gState->finished = false;
+    RF24Client::gState->connected = false;
+    RF24Client::gState->result = 0;
+    RF24Client::gState->waiting_for_ack = false;
 
-
-	sPcb = tcp_listen_with_backlog(sPcb, 1);
+    sPcb = tcp_listen_with_backlog(sPcb, 1);
 
     tcp_arg(sPcb, RF24Client::gState);
     tcp_accept(sPcb, RF24Client::accept);
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-	  UNLOCK_TCPIP_CORE();
-	#endif
-	
-	RF24Ethernet.tick();
+#if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+    UNLOCK_TCPIP_CORE();
+#endif
 
+    RF24Ethernet.tick();
 }
 /*************************************************************/
 
 void RF24Server::begin()
 {
-	#if USE_LWIP != 1
+#if USE_LWIP != 1
     uip_listen(_port);
-	#else		
+#else
 
     restart();
-	/*#if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-      LOCK_TCPIP_CORE();
-    #endif
-	if(sPcb){
-		if( sPcb->state == ESTABLISHED || sPcb->state == SYN_SENT || sPcb->state == SYN_RCVD  ){
-		  tcp_close(sPcb);
-		}
-		Ethernet.tick();
-	}
+/*#if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+  LOCK_TCPIP_CORE();
+#endif
+if(sPcb){
+    if( sPcb->state == ESTABLISHED || sPcb->state == SYN_SENT || sPcb->state == SYN_RCVD  ){
+      tcp_close(sPcb);
+    }
+    Ethernet.tick();
+}
 
-    sPcb = tcp_new();
-    RF24Client::serverActive = true;
-    tcp_err(sPcb, RF24Client::error_callback);
+sPcb = tcp_new();
+RF24Client::serverActive = true;
+tcp_err(sPcb, RF24Client::error_callback);
 
 
 ///if(!doOnce){
-    //Serial.print("bind to port ");
-	//Serial.println(RF24Server::_port);
-	err_t err = tcp_bind(sPcb, IP_ADDR_ANY, RF24Server::_port);
+//Serial.print("bind to port ");
+//Serial.println(RF24Server::_port);
+err_t err = tcp_bind(sPcb, IP_ADDR_ANY, RF24Server::_port);
 
-    if (err != ERR_OK) {
-		//Debug print
-		Serial.println("unable to bind to port");
+if (err != ERR_OK) {
+    //Debug print
+    Serial.println("unable to bind to port");
+}
+doOnce = true;
+    if(!RF24Client::gState){
+        RF24Client::gState = new RF24Client::ConnectState;
     }
-	doOnce = true;
-		if(!RF24Client::gState){
-			RF24Client::gState = new RF24Client::ConnectState;
-		}
-		RF24Client::gState->finished = false;
-		RF24Client::gState->connected = false;
-		RF24Client::gState->result = 0;
-	    RF24Client::gState->waiting_for_ack = false;
+    RF24Client::gState->finished = false;
+    RF24Client::gState->connected = false;
+    RF24Client::gState->result = 0;
+    RF24Client::gState->waiting_for_ack = false;
 
 
-	sPcb = tcp_listen(sPcb);
+sPcb = tcp_listen(sPcb);
 
-    tcp_arg(sPcb, RF24Client::gState);
-    tcp_accept(sPcb, RF24Client::accept);
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-	  UNLOCK_TCPIP_CORE();
-	#endif
-	*/
-	#endif
+tcp_arg(sPcb, RF24Client::gState);
+tcp_accept(sPcb, RF24Client::accept);
+#if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+  UNLOCK_TCPIP_CORE();
+#endif
+*/
+#endif
     RF24Ethernet.tick();
 }
 
@@ -191,16 +192,16 @@ size_t RF24Server::write(uint8_t c)
 size_t RF24Server::write(const uint8_t* buf, size_t size)
 {
     size_t ret = 0;
-	#if USE_LWIP != 1
+#if USE_LWIP != 1
     for (uip_userdata_t* data = &RF24Client::all_data[0]; data < &RF24Client::all_data[UIP_CONNS]; data++)
     {
         if ((data->state & UIP_CLIENT_CONNECTED) && uip_conns[data->state & UIP_CLIENT_SOCKETS].lport == _port)
             ret += RF24Client::_write(data, buf, size);
     }
-	#else
-		uint8_t data;
-		RF24Client::_write(&data, buf, size);
-	#endif
+#else
+    uint8_t data;
+    RF24Client::_write(&data, buf, size);
+#endif
     return ret;
 }
 
@@ -208,16 +209,16 @@ size_t RF24Server::write(const uint8_t* buf, size_t size)
 
 void RF24Server::setTimeout(uint32_t timeout)
 {
-	#if USE_LWIP != 1
-#if UIP_CONNECTION_TIMEOUT > 0
+#if USE_LWIP != 1
+    #if UIP_CONNECTION_TIMEOUT > 0
     for (uint8_t i = 0; i < UIP_CONNS; i++) {
         uip_userdata_t* data = &RF24Client::all_data[i];
         if (data) {
             data->connectTimeout = timeout;
         }
     }
-#endif
+    #endif
 #else
-	RF24Client::sConnectionTimeout = timeout;
+    //RF24Client::sConnectionTimeout = timeout;
 #endif
 }

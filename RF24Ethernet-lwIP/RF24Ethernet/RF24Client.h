@@ -22,7 +22,6 @@
 #include "Print.h"
 #include "Client.h"
 
-  
 //#define UIP_SOCKET_DATALEN UIP_TCP_MSS
 //#define UIP_SOCKET_NUMPACKETS UIP_RECEIVE_WINDOW/UIP_TCP_MSS+1
 //#ifndef UIP_SOCKET_NUMPACKETS
@@ -30,14 +29,12 @@
 //#endif
 
 #if USE_LWIP != 1
-#define UIP_CLIENT_CONNECTED    0x10
-#define UIP_CLIENT_CLOSE        0x20
-#define UIP_CLIENT_REMOTECLOSED 0x40
-#define UIP_CLIENT_RESTART      0x80
-#define UIP_CLIENT_STATEFLAGS   (UIP_CLIENT_CONNECTED | UIP_CLIENT_CLOSE | UIP_CLIENT_REMOTECLOSED | UIP_CLIENT_RESTART)
-#define UIP_CLIENT_SOCKETS      ~UIP_CLIENT_STATEFLAGS
-
-
+    #define UIP_CLIENT_CONNECTED    0x10
+    #define UIP_CLIENT_CLOSE        0x20
+    #define UIP_CLIENT_REMOTECLOSED 0x40
+    #define UIP_CLIENT_RESTART      0x80
+    #define UIP_CLIENT_STATEFLAGS   (UIP_CLIENT_CONNECTED | UIP_CLIENT_CLOSE | UIP_CLIENT_REMOTECLOSED | UIP_CLIENT_RESTART)
+    #define UIP_CLIENT_SOCKETS      ~UIP_CLIENT_STATEFLAGS
 
 /**
  * @warning <b> This is used internally and should not be accessed directly by users </b>
@@ -64,31 +61,31 @@ typedef struct __attribute__((__packed__))
     uint16_t in_pos;
     uint16_t out_pos;
     uint16_t dataCnt;
-#if UIP_CLIENT_TIMER >= 0
+    #if UIP_CLIENT_TIMER >= 0
     uint32_t timer;
-#endif
+    #endif
     uint32_t restartTime;
     uint32_t restartInterval;
-#if UIP_CONNECTION_TIMEOUT > 0
+    #if UIP_CONNECTION_TIMEOUT > 0
     uint32_t connectTimeout;
     uint32_t connectTimer;
-#endif
+    #endif
     uint8_t myData[OUTPUT_BUFFER_SIZE];
 } uip_userdata_t;
 #else
-	#include "RF24Network_config.h"
-	#define INCOMING_DATA_SIZE MAX_PAYLOAD_SIZE * 2
-	#if defined TCP_MSS
-	  extern "C" {		  
-	  #include "lwip\tcp.h"
-	  #include "lwip\tcpip.h"
-	  }
-	#else
-	  #define ETHERNET_USING_LWIP_ARDUINO
-      #include <lwIP_Arduino.h>
-      #include "lwip\include\lwip\tcp.h"
-	#endif
- #endif
+    #include "RF24Network_config.h"
+    #define INCOMING_DATA_SIZE MAX_PAYLOAD_SIZE * 2
+    #if defined TCP_MSS
+extern "C" {
+        #include "lwip\tcp.h"
+        #include "lwip\tcpip.h"
+}
+    #else
+        #define ETHERNET_USING_LWIP_ARDUINO
+        #include <lwIP_Arduino.h>
+        #include "lwip\include\lwip\tcp.h"
+    #endif
+#endif
 
 class RF24Client : public Client
 {
@@ -176,48 +173,51 @@ public:
     {
         return !this->operator==(rhs);
     };
-	
-	
+
 #if USE_LWIP != 1
     static uip_userdata_t all_data[UIP_CONNS];
 #else
-	
 
-struct ConnectState {
-    volatile bool finished = false;
-	volatile bool connected = false;
-	volatile bool waiting_for_ack = false;
-    volatile err_t result = 0;
-};
+    struct ConnectState
+    {
+        volatile bool finished = false;
+        volatile bool connected = false;
+        volatile bool waiting_for_ack = false;
+        volatile err_t result = 0;
+        volatile bool delayState = false;
+        volatile uint32_t connectTimestamp = millis();
+        volatile bool delayedStateAllocated = false;
+        volatile uint32_t sConnectionTimeout = 30000;
+        volatile uint32_t serverTimer = millis();
+        volatile uint32_t cConnectionTimeout = 45000;
+        volatile uint32_t clientTimer = millis();
+    };
 
-static ConnectState* gState;
+    static ConnectState* gState;
+    static ConnectState* delayedState;
 
-static err_t blocking_write(struct tcp_pcb* pcb, ConnectState* fstate, const char* data, size_t len);
-static err_t sent_callback(void *arg, struct tcp_pcb *tpcb, uint16_t len);
-static void error_callback(void *arg, err_t err);
-static err_t recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
-static err_t srecv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
-static err_t on_connected(void *arg, struct tcp_pcb *tpcb, err_t err);
-static err_t accept(void *arg, struct tcp_pcb *tpcb, err_t err);
-static err_t closed(void *arg, struct tcp_pcb *tpcb, err_t err);
-static err_t closed_port(void *arg, struct tcp_pcb *tpcb);
-static err_t serverTimeouts(void *arg, struct tcp_pcb *tpcb);
-static err_t clientTimeouts(void *arg, struct tcp_pcb *tpcb);
-static bool maxConns;
-static uint32_t sConnectionTimeout;
-static uint32_t cConnectionTimeout;
-static void setConnectionTimeout(uint32_t timeout);
-static uint32_t serverTimer;
-static uint32_t clientTimer;
+    static err_t blocking_write(struct tcp_pcb* pcb, ConnectState* fstate, const char* data, size_t len);
+    static err_t sent_callback(void* arg, struct tcp_pcb* tpcb, uint16_t len);
+    static void error_callback(void* arg, err_t err);
+    static err_t recv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p, err_t err);
+    static err_t srecv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p, err_t err);
+    static err_t on_connected(void* arg, struct tcp_pcb* tpcb, err_t err);
+    static err_t accept(void* arg, struct tcp_pcb* tpcb, err_t err);
+    static err_t closed(void* arg, struct tcp_pcb* tpcb, err_t err);
+    static err_t closed_port(void* arg, struct tcp_pcb* tpcb);
+    static err_t closeConn(void* arg, struct tcp_pcb* tpcb);
+    static err_t serverTimeouts(void* arg, struct tcp_pcb* tpcb);
+    static err_t clientTimeouts(void* arg, struct tcp_pcb* tpcb);
+    static err_t acceptConnection(void* arg, struct tcp_pcb* tpcb, bool setTimeout = true);
 
+    static void setConnectionTimeout(uint32_t timeout);
+    static uint32_t clientConnectionTimeout;
 
-static struct tcp_pcb* myPcb;// = nullptr;//tcp_new();// = nullptr;//tcp_new();
-static struct tcp_pcb* closedPcb;
-static bool serverActive;
-static char incomingData[INCOMING_DATA_SIZE];
-static uint16_t dataSize;
+    static struct tcp_pcb* myPcb; // = nullptr;//tcp_new();// = nullptr;//tcp_new();
+    static bool serverActive;
+    static char incomingData[INCOMING_DATA_SIZE];
+    static uint16_t dataSize;
 #endif
-
 
 private:
 #if USE_LWIP != 1
@@ -240,12 +240,12 @@ private:
     RF24Client(uint32_t data);
     RF24Client(uint8_t data);
     uint8_t* data;
-	static size_t _write(uint8_t* data, const uint8_t* buf, size_t size);
-	static int _available(uint8_t *data);
-	
-	friend class RF24EthernetClass;
+    static size_t _write(uint8_t* data, const uint8_t* buf, size_t size);
+    static int _available(uint8_t* data);
+
+    friend class RF24EthernetClass;
     friend class RF24Server;
-	
+
 #endif
 };
 
