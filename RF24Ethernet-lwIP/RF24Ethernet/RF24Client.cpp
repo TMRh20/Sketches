@@ -35,18 +35,24 @@ uip_userdata_t RF24Client::all_data[UIP_CONNS];
 #include "RF24Ethernet.h"
 
 
-RF24Client::ConnectState RF24Client::gState;
+RF24Client::ConnectState* RF24Client::gState;
 char RF24Client::incomingData[INCOMING_DATA_SIZE];
 uint16_t RF24Client::dataSize =0;
 struct tcp_pcb* RF24Client::myPcb;
+struct tcp_pcb* RF24Client::closedPcb;
 bool RF24Client::serverActive;
-
+bool RF24Client::maxConns;
+uint32_t RF24Client::sConnectionTimeout;
+uint32_t RF24Client::cConnectionTimeout;
+uint32_t RF24Client::serverTimer;
+uint32_t RF24Client::clientTimer;
 /***************************************************************************************************/
 
 // Called when the remote host acknowledges receipt of data
 err_t RF24Client::sent_callback(void *arg, struct tcp_pcb *tpcb, u16_t len) {
 
-
+    serverTimer = millis();
+	clientTimer = millis();
 	Serial.println("sent cb");
     ConnectState* state = (ConnectState*)arg;
 	if(state){
@@ -64,7 +70,8 @@ err_t RF24Client::sent_callback(void *arg, struct tcp_pcb *tpcb, u16_t len) {
 
 err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, const char* data, size_t len) {
     
-
+    serverTimer = millis();
+	clientTimer = millis();
 	
 	//Serial.println("blk write");
 
@@ -177,6 +184,7 @@ err_t RF24Client::srecv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
 
 	ConnectState* state = (ConnectState*)arg;
 
+    serverTimer = millis();
 	
     if (p == nullptr) {
         state->connected = false;
@@ -233,6 +241,7 @@ Serial.println("recv cb");
         if (p) pbuf_free(p);
         return ERR_OK;
     }
+	clientTimer = millis();
 
     const uint8_t* data = static_cast<const uint8_t*>(p->payload);
 	if(dataSize + p->len < INCOMING_DATA_SIZE){
@@ -250,14 +259,69 @@ Serial.println("recv cb");
 
 /***************************************************************************************************/
 
-err_t RF24Client::accept(void *arg, struct tcp_pcb *tpcb, err_t err) {
-	//Serial.println("acc cb");
-	ConnectState* state = (ConnectState*)arg;
-    myPcb = tpcb;
+void RF24Client::setConnectionTimeout(uint32_t timeout){
 
+	cConnectionTimeout = timeout;
+
+}
+
+/***************************************************************************************************/
+
+err_t RF24Client::clientTimeouts(void *arg, struct tcp_pcb *tpcb){
+	
+	ConnectState* state = (ConnectState*)arg;
+	
+	if(millis() - clientTimer > cConnectionTimeout){
+	   if(tpcb->state == ESTABLISHED || tpcb->state == SYN_SENT || tpcb->state == SYN_RCVD){
+		Serial.println("$$$$$$$$$$$$$$ Closed Client PCB TIMEOUT $$$$$$$$$$$");
+		err_t err = tcp_close(tpcb);
+        if (state) {
+            state->result = err;
+            state->connected = false;
+            state->finished = true; // Break the blocking loop
+	    	state->waiting_for_ack = false;
+        }	
+	  }
+	}
+	return ERR_OK;
+	
+}
+
+/***************************************************************************************************/
+
+err_t RF24Client::serverTimeouts(void *arg, struct tcp_pcb *tpcb){
+	
+	
+	if(millis() - serverTimer > sConnectionTimeout){
+	   if(tpcb->state == ESTABLISHED || tpcb->state == SYN_SENT || tpcb->state == SYN_RCVD){
+		Serial.println("$$$$$$$$$$$$$$ Closed Server PCB TIMEOUT $$$$$$$$$$$");
+		tcp_close(tpcb);
+		//maxConns = false;
+	  }
+	}
+	return ERR_OK;
+	
+}
+
+/**************************************************************************************************/
+
+err_t RF24Client::accept(void *arg, struct tcp_pcb *tpcb, err_t err) {
+	Serial.println("acc cb");
+	ConnectState* state = (ConnectState*)arg;
+	
+	//if(!(myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD)){
+	//	maxConns = false;
+	//}
+ 
   #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
 	LOCK_TCPIP_CORE();
   #endif
+
+    myPcb = tpcb;
+    serverTimer = millis();
+	if(sConnectionTimeout > 0){
+	  tcp_poll(tpcb, serverTimeouts, 20);
+	}
 	tcp_recv(tpcb, srecv_callback);
 	tcp_sent(tpcb, sent_callback);
   #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
@@ -279,6 +343,18 @@ err_t RF24Client::on_connected(void *arg, struct tcp_pcb *tpcb, err_t err) {
 Serial.println("conn cb");
 
 	ConnectState* state = (ConnectState*)arg;
+ 
+  if(cConnectionTimeout > 0){
+  #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+	LOCK_TCPIP_CORE();
+  #endif
+	tcp_poll(tpcb, clientTimeouts, 20);
+  #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+	UNLOCK_TCPIP_CORE();
+  #endif
+  }
+	clientTimer = millis();
+	
 	if(state){
       state->result = err;
       state->finished = true;
@@ -296,7 +372,9 @@ Serial.println("conn cb");
 #if USE_LWIP != 1
 RF24Client::RF24Client() : data(NULL) {}
 #else
-RF24Client::RF24Client() : data(0) {}
+RF24Client::RF24Client() : data(0) {
+	cConnectionTimeout = 0;
+}
 
 #endif
 /*************************************************************/
@@ -304,7 +382,9 @@ RF24Client::RF24Client() : data(0) {}
 #if USE_LWIP != 1
 RF24Client::RF24Client(uip_userdata_t* conn_data) : data(conn_data) {}
 #else
-RF24Client::RF24Client(uint32_t data) : data(0) {}	
+RF24Client::RF24Client(uint32_t data) : data(0) {
+	cConnectionTimeout = 45000;
+}	
 #endif
 /*************************************************************/
 
@@ -313,7 +393,10 @@ uint8_t RF24Client::connected()
 	#if USE_LWIP != 1
     return (data && (data->packets_in != 0 || (data->state & UIP_CLIENT_CONNECTED))) ? 1 : 0;
 	#else
-	return gState.connected;
+	if(gState != nullptr){	
+       return gState->connected;
+	}
+	return 0;
 	#endif
 }
 
@@ -391,13 +474,17 @@ if( myPcb != nullptr ){
 		
 		dataSize = 0;
 	    memset(incomingData,0,sizeof(incomingData));
-		gState.finished = false;
-		gState.connected = false;
-		gState.result = 0;
-	    gState.waiting_for_ack = false;
+		
+		if(gState == nullptr){
+		  gState = new ConnectState;
+		}
+		gState->finished = false;
+		gState->connected = false;
+		gState->result = 0;
+	    gState->waiting_for_ack = false;
 
 
-    tcp_arg(myPcb, &gState);
+    tcp_arg(myPcb, gState);
     tcp_err(myPcb, error_callback);
     tcp_recv(myPcb, recv_callback);
 
@@ -425,8 +512,8 @@ if( myPcb != nullptr ){
   		  tcp_abort(myPcb);
 		  //myPcb = nullptr;
 		}
-		gState.connected = false;
-		gState.finished = true;
+		gState->connected = false;
+		gState->finished = true;
 
 		return err;
 	}
@@ -435,10 +522,10 @@ if( myPcb != nullptr ){
 	#endif	
     uint32_t timeout = millis() + 5000;
     // Simulate blocking by looping until the callback sets 'finished'
-    while (!gState.finished && millis() < timeout) {
+    while (!gState->finished && millis() < timeout) {
          Ethernet.tick();
     }
-    return gState.connected;
+    return gState->connected;
 
 
 
@@ -516,24 +603,28 @@ void RF24Client::stop()
 #else
 
 if(serverActive){
+
     uint32_t timeout = millis() + 1000;
-	while(!gState.finished && gState.waiting_for_ack && millis() < timeout){ RF24Ethernet.tick();}
-	if(myPcb){
-    if( myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD  ){
-	  gState.connected = false;
-  #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+	if(myPcb != nullptr && gState != nullptr){
+	while(!gState->finished && gState->waiting_for_ack && millis() < timeout){ RF24Ethernet.tick();}
+	
+      if( myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD  ){
+	    gState->connected = false;
+   #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
 	LOCK_TCPIP_CORE();
-  #endif
-	  tcp_close(myPcb);
-  #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+   #endif	  
+	    tcp_close(myPcb);
+   #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
 	UNLOCK_TCPIP_CORE();
-  #endif
-	}
-	}
-	RF24Server::restart();
+   #endif
+	    RF24Server::restart();
+	  }
+    }
+
 }else{
-	gState.connected = false;
-	if(myPcb){
+	if(myPcb != nullptr && gState != nullptr){
+	gState->connected = false;
+
 	if( myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD  ){
   #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
 	LOCK_TCPIP_CORE();
@@ -652,7 +743,7 @@ test2:
 	    Ethernet.tick();
 	  }
       memcpy(buffer, &buf[position], MAX_PAYLOAD_SIZE-14);
-	  err_t write_err = blocking_write(myPcb, &gState, buffer, MAX_PAYLOAD_SIZE-14);
+	  err_t write_err = blocking_write(myPcb, gState, buffer, MAX_PAYLOAD_SIZE-14);
 	  position += MAX_PAYLOAD_SIZE-14;
 	  size -= MAX_PAYLOAD_SIZE-14;
 	  Ethernet.tick();
@@ -663,7 +754,7 @@ test2:
 	    Ethernet.tick();
 	}
 	memcpy(buffer, &buf[position], size);
-	err_t write_err = blocking_write(myPcb, &gState, buffer, size);	
+	err_t write_err = blocking_write(myPcb, gState, buffer, size);	
 	
 	if (write_err == ERR_OK) {
 	  return(size);

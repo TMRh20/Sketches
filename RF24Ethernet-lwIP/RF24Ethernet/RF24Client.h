@@ -190,7 +190,7 @@ struct ConnectState {
     volatile err_t result = 0;
 };
 
-static ConnectState gState;
+static ConnectState* gState;
 
 static err_t blocking_write(struct tcp_pcb* pcb, ConnectState* fstate, const char* data, size_t len);
 static err_t sent_callback(void *arg, struct tcp_pcb *tpcb, uint16_t len);
@@ -199,7 +199,20 @@ static err_t recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_
 static err_t srecv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
 static err_t on_connected(void *arg, struct tcp_pcb *tpcb, err_t err);
 static err_t accept(void *arg, struct tcp_pcb *tpcb, err_t err);
+static err_t closed(void *arg, struct tcp_pcb *tpcb, err_t err);
+static err_t closed_port(void *arg, struct tcp_pcb *tpcb);
+static err_t serverTimeouts(void *arg, struct tcp_pcb *tpcb);
+static err_t clientTimeouts(void *arg, struct tcp_pcb *tpcb);
+static bool maxConns;
+static uint32_t sConnectionTimeout;
+static uint32_t cConnectionTimeout;
+static void setConnectionTimeout(uint32_t timeout);
+static uint32_t serverTimer;
+static uint32_t clientTimer;
+
+
 static struct tcp_pcb* myPcb;// = nullptr;//tcp_new();// = nullptr;//tcp_new();
+static struct tcp_pcb* closedPcb;
 static bool serverActive;
 static char incomingData[INCOMING_DATA_SIZE];
 static uint16_t dataSize;

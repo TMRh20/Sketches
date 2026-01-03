@@ -372,7 +372,7 @@ void RF24EthernetClass::set_gateway(IPAddress gwIP)
 
 void RF24EthernetClass::listen(uint16_t port)
 {
-	#ifndef USE_LWIP
+	#if USE_LWIP < 1
     uip_listen(HTONS(port));
 	#else
 
@@ -394,10 +394,10 @@ void RF24EthernetClass::listen(uint16_t port)
 	//doOnce = true;
 
 //}
-		RF24Client::gState.finished = false;
-		RF24Client::gState.connected = false;
-		RF24Client::gState.result = 0;
-	    RF24Client::gState.waiting_for_ack = false;
+		RF24Client::gState->finished = false;
+		RF24Client::gState->connected = false;
+		RF24Client::gState->result = 0;
+	    RF24Client::gState->waiting_for_ack = false;
 		
 		delay(1000);
 		RF24Client::myPcb = tcp_listen(RF24Client::myPcb);
