@@ -342,7 +342,6 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                 if (state->delayedStateAllocated == false) {
                     state->delayedStateAllocated = true;
                     //myPcb = tcp_new();
-                    closedPcb = tpcb;
                     accepts--;
                     myPcb = tpcb;
                     Serial.println("----------ACCEPT delayed PCB 2---------");

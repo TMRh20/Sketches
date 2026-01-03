@@ -79,9 +79,6 @@ void RF24Server::restart()
         RF24Client::delayedState = new RF24Client::ConnectState;
     }
     sPcb = tcp_new();
-    if (RF24Client::closedPcb == nullptr) {
-        RF24Client::closedPcb = tcp_new();
-    }
 
     RF24Client::serverActive = true;
     tcp_err(sPcb, RF24Client::error_callback);
