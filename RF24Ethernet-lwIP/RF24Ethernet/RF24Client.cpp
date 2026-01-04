@@ -371,6 +371,8 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                     Serial.print("----------close off delayed PCB 1--------- ");
                     Serial.println(state->identifier);
                     tcp_close(tpcb);
+                    tcp_poll(tpcb,NULL,0);
+                    tcp_arg(tpcb,NULL);
                     if(state->backlogWasAccepted == false){
                       Serial.println("------with backlog accepted--------");
                       tcp_backlog_accepted(tpcb);
@@ -380,6 +382,10 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                     UNLOCK_TCPIP_CORE();
                 #endif
                     return ERR_OK;
+                  }else{
+                      Serial.println("Killing off TPCB that was already closed 1");
+                      tpcb = nullptr;
+                      myPcb = nullptr;
                   }
                 }
             }
@@ -393,15 +399,33 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                 Serial.println(state->identifier);
                 state->backlogWasClosed = true;
                 tcp_close(tpcb);
+                tcp_poll(tpcb,NULL,0);
+                tcp_arg(tpcb,NULL);
                 if(state->backlogWasAccepted == false){
                     Serial.println("------with backlog accepted--------");
                     tcp_backlog_accepted(tpcb);
                     accepts--;
                 }
+            }else{
+                      Serial.println("Killing off TPCB that was already closed 2");
+                      tpcb = nullptr;
+                      myPcb = nullptr;
             }
         }
        }
     }
+	if (tpcb != nullptr) {
+       if(state == nullptr){
+               Serial.print("----------close off delayed PCB 3--------- ");
+                Serial.println(state->identifier);
+                state->backlogWasClosed = true;
+                tcp_close(tpcb);
+                Serial.println("------with backlog accepted--------");
+                tcp_backlog_accepted(tpcb);
+                accepts--;
+
+        }
+     }
         
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     UNLOCK_TCPIP_CORE();
@@ -488,12 +512,10 @@ err_t RF24Client::acceptConnection(void* arg, struct tcp_pcb* tpcb, bool setTime
       state->connected = true;
       state->waiting_for_ack = false;
       state->serverTimer = millis();
-      state->sConnectionTimeout = 30000;
+      state->sConnectionTimeout = clientConnectionTimeout;
       state->backlogWasAccepted = false;
       state->backlogWasClosed = false;
-      if (!setTimeout) {
-        state->connectTimestamp = millis();
-      }
+      state->connectTimestamp = millis();
     }
 
     return ERR_OK;
