@@ -263,9 +263,10 @@ public:
     /** Used internally to write to the internall data queue */
     static void writeRXQueue(EthQueue* RXQueue, const uint8_t* ethFrame, uint16_t lenEthFrame);
 
+    static netif myNetif;
+    static constexpr uint32_t NetIF_Speed_BPS = 1000000;
 private:
     static constexpr uint16_t ETHERNET_MTU = 1500;
-    static constexpr uint32_t NetIF_Speed_BPS = 1000000;
     static constexpr uint8_t MacAddr[6] = {0, 1, 2, 3, 4};
     
     static pbuf* readRXQueue(EthQueue* RXQueue);
@@ -273,8 +274,6 @@ private:
     static void EthRX_Handler(const uint8_t* ethFrame, const uint16_t lenEthFrame);
     static bool isConnected;
     static bool dataBufferEmpty;
-
-    static netif myNetif;
 #endif
 
 
