@@ -51,11 +51,14 @@ err_t RF24Client::sent_callback(void* arg, struct tcp_pcb* tpcb, u16_t len)
     ConnectState* state = (ConnectState*)arg;
     if (state != nullptr) {
         state->serverTimer = millis();
-
         state->clientTimer = millis();
         Serial.println("sent cb");
-    }
-    if (state) {
+    
+        if(state->clientPollingSetup == 1){
+            state->clientPollingSetup = 0;
+            tcp_poll(tpcb, clientTimeouts, 30);
+            
+        }
         state->waiting_for_ack = false; // Data is successfully out
         state->finished = true;
     }
@@ -736,6 +739,9 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
     while (!gState->finished && millis() < timeout) {
         Ethernet.tick();
     }
+    
+    gState->clientPollingSetup = 1;
+    
     return gState->connected;
 
 #endif
