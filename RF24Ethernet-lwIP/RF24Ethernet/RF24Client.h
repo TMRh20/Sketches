@@ -173,11 +173,16 @@ public:
     {
         return !this->operator==(rhs);
     };
-
+    
+    
+protected:
 #if USE_LWIP != 1
     static uip_userdata_t all_data[UIP_CONNS];
 #else
 
+    /**
+    * Connection state structure, used internally to monitor the state of connections
+    */
     struct ConnectState
     {
         volatile bool finished = false;
@@ -191,38 +196,31 @@ public:
         volatile uint8_t placeholder = 0;
         
         volatile uint32_t connectTimestamp = millis();
-        volatile uint32_t sConnectionTimeout = clientConnectionTimeout;
+        volatile uint32_t sConnectionTimeout = serverConnectionTimeout;
         volatile uint32_t serverTimer = millis();
-        volatile uint32_t cConnectionTimeout = 45000;
+        volatile uint32_t cConnectionTimeout = clientConnectionTimeout;
         volatile uint32_t clientTimer = millis();
         volatile err_t result = 0;
     };
 
+    /** Connection states */
     static ConnectState* gState;
 
-    static err_t blocking_write(struct tcp_pcb* pcb, ConnectState* fstate, const char* data, size_t len);
+    /** Used internally when data is ACKed */
     static err_t sent_callback(void* arg, struct tcp_pcb* tpcb, uint16_t len);
-    static void error_callback(void* arg, err_t err);
+    /** Used internally for receiving data via the client functions */
     static err_t recv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p, err_t err);
+    /** Used internally for receiving data via the server functions */
     static err_t srecv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p, err_t err);
-    static err_t on_connected(void* arg, struct tcp_pcb* tpcb, err_t err);
-    static err_t accept(void* arg, struct tcp_pcb* tpcb, err_t err);
-    static err_t closed(void* arg, struct tcp_pcb* tpcb, err_t err);
-    static err_t closed_port(void* arg, struct tcp_pcb* tpcb);
-    static err_t closeConn(void* arg, struct tcp_pcb* tpcb);
-    static err_t serverTimeouts(void* arg, struct tcp_pcb* tpcb);
-    static err_t clientTimeouts(void* arg, struct tcp_pcb* tpcb);
-    static err_t acceptConnection(void* arg, struct tcp_pcb* tpcb, bool setTimeout = true);
-
+    /** Used internally when there is an error */
+    static void error_callback(void* arg, err_t err);
+    
+    /** Used to set client timeouts. Whenever there is no data sent, received, or acked in 
+    * the given timeout period (mS) the connection will be closed. Set to 0 to disable
+    **/
     static void setConnectionTimeout(uint32_t timeout);
-    static uint32_t clientConnectionTimeout;
-    static uint32_t serverConnectionTimeout;
 
-    static struct tcp_pcb* myPcb; // = nullptr;//tcp_new();// = nullptr;//tcp_new();
-    static bool serverActive;
-    static char incomingData[INCOMING_DATA_SIZE];
-    static uint16_t dataSize;
-    static uint8_t simpleCounter;
+
 #endif
 
 private:
@@ -251,7 +249,26 @@ private:
 
     friend class RF24EthernetClass;
     friend class RF24Server;
-
+    
+    static err_t accept(void* arg, struct tcp_pcb* tpcb, err_t err);
+    static err_t closed(void* arg, struct tcp_pcb* tpcb, err_t err);
+    static err_t closed_port(void* arg, struct tcp_pcb* tpcb);
+    static err_t closeConn(void* arg, struct tcp_pcb* tpcb);
+    static err_t serverTimeouts(void* arg, struct tcp_pcb* tpcb);
+    static err_t clientTimeouts(void* arg, struct tcp_pcb* tpcb);
+    static err_t acceptConnection(void* arg, struct tcp_pcb* tpcb, bool setTimeout = true);
+    static err_t on_connected(void* arg, struct tcp_pcb* tpcb, err_t err);
+    static err_t blocking_write(struct tcp_pcb* pcb, ConnectState* fstate, const char* data, size_t len);
+    
+    static uint32_t clientConnectionTimeout;
+    static uint32_t serverConnectionTimeout;
+    static uint16_t dataSize;
+    static struct tcp_pcb* myPcb; // = nullptr;//tcp_new();// = nullptr;//tcp_new();
+    
+    static char incomingData[INCOMING_DATA_SIZE];
+    static bool serverActive;
+    static uint8_t simpleCounter;
+    
 #endif
 };
 

@@ -39,12 +39,12 @@ public:
     size_t write(const uint8_t* buf, size_t size);
     using Print::write;
     void setTimeout(uint32_t timeout);
+
+private:
+#if USE_LWIP > 0
     static bool doOnce;
     static struct tcp_pcb* sPcb;
     static struct tcp_pcb* bindPcb;
-
-private:
-#ifdef USE_LWIP
     static uint16_t _port;
 
 #else

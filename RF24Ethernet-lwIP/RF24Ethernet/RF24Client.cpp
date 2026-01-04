@@ -336,7 +336,7 @@ err_t RF24Client::serverTimeouts(void* arg, struct tcp_pcb* tpcb)
     LOCK_TCPIP_CORE();
     #endif    
                 tcp_close(tpcb);
-                if(state->backlogWasAccepted == false){
+                if(state->backlogWasAccepted == false && state->backlogWasClosed == true){
                     Serial.println("------with backlog accepted--------");
                     tcp_backlog_accepted(tpcb);
                     accepts--;

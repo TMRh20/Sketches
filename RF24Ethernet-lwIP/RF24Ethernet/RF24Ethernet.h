@@ -255,26 +255,29 @@ public:
     #endif
 #endif
 
-#if USE_LWIP == 1
+
+#if USE_LWIP > 0
+
+    /** Used internally to initiallize incoming data queue */
+    static void initRXQueue(EthQueue* RXQueue);
+    /** Used internally to write to the internall data queue */
+    static void writeRXQueue(EthQueue* RXQueue, const uint8_t* ethFrame, uint16_t lenEthFrame);
+
+private:
     static constexpr uint16_t ETHERNET_MTU = 1500;
     static constexpr uint32_t NetIF_Speed_BPS = 1000000;
     static constexpr uint8_t MacAddr[6] = {0, 1, 2, 3, 4};
-    static void initRXQueue(EthQueue* RXQueue);
-    static void writeRXQueue(EthQueue* RXQueue, const uint8_t* ethFrame, uint16_t lenEthFrame);
+    
     static pbuf* readRXQueue(EthQueue* RXQueue);
 
     static void EthRX_Handler(const uint8_t* ethFrame, const uint16_t lenEthFrame);
-    //err_t netif_output(struct netif *myNetif, struct pbuf *p);
-    //static err_t netif_init(struct netif *myNetif);
-    //err_t tun_netif_output(struct netif *netif, struct pbuf *p, const ip4_addr_t *ipaddr);
-    //volatile uint8_t isConnected = 0;
     static bool isConnected;
     static bool dataBufferEmpty;
 
     static netif myNetif;
 #endif
 
-private:
+
 #if defined NRF52_RADIO_LIBRARY
     nrf_to_nrf& radio;
 #else
@@ -292,7 +295,7 @@ private:
 
     uint8_t RF24_Channel;
 
-#if USE_LWIP != 1
+#if USE_LWIP < 1
     struct timer periodic_timer;
     #if defined RF24_TAP
     struct timer arp_timer;
