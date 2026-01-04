@@ -248,13 +248,9 @@ err_t RF24Client::recv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p,
     if (p == nullptr) {
         state->connected = false;
         state->finished = true; // Break the loop
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    LOCK_TCPIP_CORE();
-    #endif
+
         tcp_close(tpcb);
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    UNLOCK_TCPIP_CORE();
-    #endif
+
         return ERR_OK;
     }
     if (err != ERR_OK || state == nullptr) {
@@ -275,14 +271,10 @@ err_t RF24Client::recv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p,
         Serial.println("recv: Out of incoming buffer space");
     }
 
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    LOCK_TCPIP_CORE();
-    #endif
+
     // Process data
     tcp_recved(tpcb, p->len);
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    UNLOCK_TCPIP_CORE();
-    #endif
+
     pbuf_free(p);
     return ERR_OK;
 }
@@ -569,7 +561,7 @@ err_t RF24Client::on_connected(void* arg, struct tcp_pcb* tpcb, err_t err)
     ConnectState* state = (ConnectState*)arg;
 
     if (state != nullptr) {
-        if (state->cConnectionTimeout > 0) {
+        /*if (state->cConnectionTimeout > 0) {
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
             LOCK_TCPIP_CORE();
     #endif
@@ -577,7 +569,7 @@ err_t RF24Client::on_connected(void* arg, struct tcp_pcb* tpcb, err_t err)
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
             UNLOCK_TCPIP_CORE();
     #endif
-        }
+        }*/
 
         state->cConnectionTimeout = clientConnectionTimeout;
         state->clientTimer = millis();
