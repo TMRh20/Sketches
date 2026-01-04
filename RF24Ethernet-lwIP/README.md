@@ -1,8 +1,8 @@
-This is an copy of the RF24Ethernet library designed to work with the lwIP IP stack.
+This is a copy of the RF24Ethernet library designed to work with the lwIP IP stack.
 The code should be considered experimental as it is currently in development. 
 
-Requres:
-1. Arduino lwIP library can be installed from Arduino Library Manager
+Requires:
+1. Arduino lwIP library can be installed from Arduino Library Manager (ESP32 and ESP8266 devices already have the lwIP stack installed internally)
 
 To install:
 1. Copy the RF24Ethernet folder into your Arduino Libraries folder at Documents/Arduino/libraries/
