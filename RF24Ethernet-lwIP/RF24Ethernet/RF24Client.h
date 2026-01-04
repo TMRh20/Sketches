@@ -191,7 +191,7 @@ public:
         volatile uint8_t placeholder = 0;
         
         volatile uint32_t connectTimestamp = millis();
-        volatile uint32_t sConnectionTimeout = 30000;
+        volatile uint32_t sConnectionTimeout = clientConnectionTimeout;
         volatile uint32_t serverTimer = millis();
         volatile uint32_t cConnectionTimeout = 45000;
         volatile uint32_t clientTimer = millis();
@@ -216,6 +216,7 @@ public:
 
     static void setConnectionTimeout(uint32_t timeout);
     static uint32_t clientConnectionTimeout;
+    static uint32_t serverConnectionTimeout;
 
     static struct tcp_pcb* myPcb; // = nullptr;//tcp_new();// = nullptr;//tcp_new();
     static bool serverActive;

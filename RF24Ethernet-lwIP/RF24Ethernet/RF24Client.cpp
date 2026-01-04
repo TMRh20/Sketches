@@ -40,6 +40,7 @@ uint16_t RF24Client::dataSize = 0;
 struct tcp_pcb* RF24Client::myPcb;
 bool RF24Client::serverActive;
 uint32_t RF24Client::clientConnectionTimeout;
+uint32_t RF24Client::serverConnectionTimeout;
 uint8_t RF24Client::simpleCounter;
 /***************************************************************************************************/
 
@@ -195,8 +196,10 @@ err_t RF24Client::srecv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p
     }
 
     if (p == nullptr) {
-        state->connected = false;
+        if(state != nullptr){
+          state->connected = false;
         //state->finished = true; // Break the loop
+        }
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
         LOCK_TCPIP_CORE();
     #endif
@@ -245,7 +248,13 @@ err_t RF24Client::recv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p,
     if (p == nullptr) {
         state->connected = false;
         state->finished = true; // Break the loop
+    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+    LOCK_TCPIP_CORE();
+    #endif
         tcp_close(tpcb);
+    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+    UNLOCK_TCPIP_CORE();
+    #endif
         return ERR_OK;
     }
     if (err != ERR_OK || state == nullptr) {
@@ -266,8 +275,14 @@ err_t RF24Client::recv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p,
         Serial.println("recv: Out of incoming buffer space");
     }
 
+    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+    LOCK_TCPIP_CORE();
+    #endif
     // Process data
     tcp_recved(tpcb, p->len);
+    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+    UNLOCK_TCPIP_CORE();
+    #endif
     pbuf_free(p);
     return ERR_OK;
 }
@@ -303,6 +318,7 @@ err_t RF24Client::clientTimeouts(void* arg, struct tcp_pcb* tpcb)
 }
 
 /***************************************************************************************************/
+int32_t accepts = 0;
 
 err_t RF24Client::serverTimeouts(void* arg, struct tcp_pcb* tpcb)
 {
@@ -316,15 +332,36 @@ err_t RF24Client::serverTimeouts(void* arg, struct tcp_pcb* tpcb)
         if (millis() - state->serverTimer > state->sConnectionTimeout) {
             if (tpcb->state == ESTABLISHED || tpcb->state == SYN_SENT || tpcb->state == SYN_RCVD) {
                 Serial.println("$$$$$$$$$$$$$$ Closed Server PCB TIMEOUT $$$$$$$$$$$");
+    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+    LOCK_TCPIP_CORE();
+    #endif    
                 tcp_close(tpcb);
-                //maxConns = false;
+                if(state->backlogWasAccepted == false){
+                    Serial.println("------with backlog accepted--------");
+                    tcp_backlog_accepted(tpcb);
+                    accepts--;
+                }
+    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+    UNLOCK_TCPIP_CORE();
+    #endif
+
+            }else{
+    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+    LOCK_TCPIP_CORE();
+    #endif
+                tcp_poll(tpcb, NULL, 0);
+                tpcb = nullptr;
+                tcp_arg(tpcb,NULL);
+    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+    UNLOCK_TCPIP_CORE();
+    #endif
             }
         }
     }
     return ERR_OK;
 }
 
-int32_t accepts = 0;
+
 
 err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
 {

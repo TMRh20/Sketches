@@ -213,6 +213,6 @@ void RF24Server::setTimeout(uint32_t timeout)
     }
     #endif
 #else
-    //RF24Client::sConnectionTimeout = timeout;
+    RF24Client::serverConnectionTimeout = timeout;
 #endif
 }
