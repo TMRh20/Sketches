@@ -183,18 +183,22 @@ public:
         volatile bool finished = false;
         volatile bool connected = false;
         volatile bool waiting_for_ack = false;
-        volatile err_t result = 0;
+        volatile bool backlogWasClosed = false;
+        
+        volatile bool backlogWasAccepted = false;
         volatile bool delayState = false;
+        volatile uint8_t identifier = 0;
+        volatile uint8_t placeholder = 0;
+        
         volatile uint32_t connectTimestamp = millis();
-        volatile bool delayedStateAllocated = false;
         volatile uint32_t sConnectionTimeout = 30000;
         volatile uint32_t serverTimer = millis();
         volatile uint32_t cConnectionTimeout = 45000;
         volatile uint32_t clientTimer = millis();
+        volatile err_t result = 0;
     };
 
     static ConnectState* gState;
-    static ConnectState* delayedState;
 
     static err_t blocking_write(struct tcp_pcb* pcb, ConnectState* fstate, const char* data, size_t len);
     static err_t sent_callback(void* arg, struct tcp_pcb* tpcb, uint16_t len);
@@ -217,6 +221,7 @@ public:
     static bool serverActive;
     static char incomingData[INCOMING_DATA_SIZE];
     static uint16_t dataSize;
+    static uint8_t simpleCounter;
 #endif
 
 private:

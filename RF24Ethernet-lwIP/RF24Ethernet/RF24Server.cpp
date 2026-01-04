@@ -75,9 +75,6 @@ void RF24Server::restart()
         Ethernet.tick();
     }
 
-    if (RF24Client::delayedState == nullptr) {
-        RF24Client::delayedState = new RF24Client::ConnectState;
-    }
     sPcb = tcp_new();
 
     RF24Client::serverActive = true;
