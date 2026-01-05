@@ -124,6 +124,7 @@ void loop() {
 
   // We need to implement a disconnection timer, in case we lose connection
   // and the server stops responding
+  // Note: If using the uIP stack (not lwIP), there is internal timeout functionality
   if(client.connected()){
      if(millis() - clientTimeoutTimer > 30000){
         client.stop();
