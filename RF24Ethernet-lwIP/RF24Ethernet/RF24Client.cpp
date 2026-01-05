@@ -54,11 +54,7 @@ err_t RF24Client::sent_callback(void* arg, struct tcp_pcb* tpcb, u16_t len)
         state->clientTimer = millis();
         Serial.println("sent cb");
     
-        if(state->clientPollingSetup == 1){
-            state->clientPollingSetup = 0;
-            tcp_poll(tpcb, clientTimeouts, 30);
-            
-        }
+
         state->waiting_for_ack = false; // Data is successfully out
         state->finished = true;
     }
@@ -274,7 +270,6 @@ err_t RF24Client::recv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p,
         Serial.println("recv: Out of incoming buffer space");
     }
 
-
     // Process data
     tcp_recved(tpcb, p->len);
 
@@ -399,12 +394,12 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
 
                 if ((tpcb->state == ESTABLISHED || tpcb->state == SYN_SENT || tpcb->state == SYN_RCVD)) {
                   if(state->backlogWasClosed == false){
-                      state->backlogWasClosed = true;
+                      
                     Serial.print("----------close off delayed PCB 1--------- ");
                     Serial.println(state->identifier);
-                    tcp_close(tpcb);
-                    tcp_poll(tpcb,NULL,0);
-                    tcp_arg(tpcb,NULL);
+                    if(tcp_close(tpcb) == ERR_OK){
+                        state->backlogWasClosed = true;
+                    }
                     if(state->backlogWasAccepted == false){
                       Serial.println("------with backlog accepted--------");
                       tcp_backlog_accepted(tpcb);
@@ -415,9 +410,12 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                 #endif
                     return ERR_OK;
                   }else{
-                      Serial.println("Killing off TPCB that was already closed 1");
-                      tpcb = nullptr;
-                      myPcb = nullptr;
+                      Serial.print("Killing off TPCB that was already closed 1 ");
+                      if(state != nullptr){                      
+                        Serial.println(state->identifier);
+                      }
+                      //tpcb = nullptr;
+                      //myPcb = nullptr;
                   }
                 }
             }
@@ -428,20 +426,22 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
         if (millis() - state->connectTimestamp > state->sConnectionTimeout) {
             if(state->backlogWasClosed == false){
                 Serial.print("----------close off delayed PCB 2--------- ");
-                Serial.println(state->identifier);
-                state->backlogWasClosed = true;
-                tcp_close(tpcb);
-                tcp_poll(tpcb,NULL,0);
-                tcp_arg(tpcb,NULL);
+                Serial.println(state->identifier);                
+                if(tcp_close(tpcb) == ERR_OK){
+                    state->backlogWasClosed = true;
+                }
                 if(state->backlogWasAccepted == false){
                     Serial.println("------with backlog accepted--------");
                     tcp_backlog_accepted(tpcb);
                     accepts--;
                 }
             }else{
-                      Serial.println("Killing off TPCB that was already closed 2");
-                      tpcb = nullptr;
-                      myPcb = nullptr;
+                    Serial.print("Killing off TPCB that was already closed 2 ");
+                    if(state != nullptr){                      
+                      Serial.println(state->identifier);
+                    }
+                    //tpcb = nullptr;
+                    //myPcb = nullptr;
             }
         }
        }
@@ -450,8 +450,10 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
        if(state == nullptr){
                Serial.print("----------close off delayed PCB 3--------- ");
                 Serial.println(state->identifier);
-                state->backlogWasClosed = true;
-                tcp_close(tpcb);
+                
+                if(tcp_close(tpcb) == ERR_OK){
+                    state->backlogWasClosed = true;
+                }
                 Serial.println("------with backlog accepted--------");
                 tcp_backlog_accepted(tpcb);
                 accepts--;
@@ -740,7 +742,9 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
         Ethernet.tick();
     }
     
-    gState->clientPollingSetup = 1;
+    if(clientConnectionTimeout > 0){
+      gState->clientPollingSetup = 1;
+    }
     
     return gState->connected;
 
