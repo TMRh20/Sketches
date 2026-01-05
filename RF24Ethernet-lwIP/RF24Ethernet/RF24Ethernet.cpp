@@ -139,8 +139,8 @@ err_t netif_output(struct netif* netif, struct pbuf* p)
         }
     }
 
-    Serial.print("Net out: ");
-    Serial.println(nodeAddress, OCT);
+    IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("Net out: "); Serial.println(nodeAddress, OCT); );
+    
     RF24NetworkHeader headerOut(nodeAddress, EXTERNAL_DATA_TYPE);
 
     if (total_len && total_len < MAX_PAYLOAD_SIZE) {
@@ -369,17 +369,12 @@ void RF24EthernetClass::listen(uint16_t port)
     RF24Client::serverActive = true;
     tcp_err(RF24Client::myPcb, RF24Client::error_callback);
 
-    ///if(!doOnce){
-    //Serial.print("bind to port ");
-    //Serial.println(RF24Server::_port);
+
     err_t err = tcp_bind(RF24Client::myPcb, IP_ADDR_ANY, port);
     if (err != ERR_OK) {
-        //Debug print
-        Serial.println("unable to bind to port");
+        IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("unable to bind to port"););
     }
-    //doOnce = true;
 
-    //}
     RF24Client::gState->finished = false;
     RF24Client::gState->connected = false;
     RF24Client::gState->result = 0;
@@ -591,17 +586,9 @@ void RF24EthernetClass::tick()
         if (RF24Ethernet.network.frag_ptr->message_size > 0) {
             uint16_t len = RF24Ethernet.network.frag_ptr->message_size;
             Ethernet.EthRX_Handler(RF24Ethernet.network.frag_ptr->message_buffer, len);
-            Serial.println("Net in");
+            IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("Net in"););
         }
     }
-
-    //if (RF24Ethernet.network.frag_ptr->message_size > 0) {
-    //  uint16_t len = RF24Ethernet.network.frag_ptr->message_size;
-    //  Ethernet.EthRX_Handler(RF24Ethernet.network.frag_ptr->message_buffer, len);
-    //Serial.println("Net in");
-    //}
-    //return;
-    //}
 
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     LOCK_TCPIP_CORE();
