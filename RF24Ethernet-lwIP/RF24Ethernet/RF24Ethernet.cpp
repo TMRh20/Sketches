@@ -136,7 +136,7 @@ err_t netif_output(struct netif* netif, struct pbuf* p)
     else {
         nodeAddress = Ethernet.mesh.getAddress((char)buf[19]);
         if (nodeAddress < 0) {
-            return -1;
+            return ERR_OK;
         }
     }
 

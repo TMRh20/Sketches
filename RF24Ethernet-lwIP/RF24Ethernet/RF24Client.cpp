@@ -305,16 +305,18 @@ err_t RF24Client::serverTimeouts(void* arg, struct tcp_pcb* tpcb)
 
     ConnectState* state = (ConnectState*)arg;
 
-    if (state != nullptr) {
+    if (state != nullptr & tpcb != nullptr) {
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("stimeout cb "); Serial.println(millis() - state->serverTimer); );
         
         if (millis() - state->serverTimer > state->sConnectionTimeout) {
-            if (tpcb->state == ESTABLISHED || tpcb->state == SYN_SENT || tpcb->state == SYN_RCVD) {
+            //if (tpcb->state == ESTABLISHED || tpcb->state == SYN_SENT || tpcb->state == SYN_RCVD) {
                 IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("$$$$$$$$$$$$$$ Closed Server PCB TIMEOUT $$$$$$$$$$$"); );
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     LOCK_TCPIP_CORE();
     #endif    
                 tcp_close(tpcb);
+                state->closeTimer = millis();
+                state->backlogWasClosed = true;
                 if(state->backlogWasAccepted == false && state->backlogWasClosed == true){
                     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("------with backlog accepted--------"); );
                     tcp_backlog_accepted(tpcb);
@@ -323,19 +325,25 @@ err_t RF24Client::serverTimeouts(void* arg, struct tcp_pcb* tpcb)
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     UNLOCK_TCPIP_CORE();
     #endif
-
-            }else{
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    LOCK_TCPIP_CORE();
-    #endif
-                //tcp_poll(tpcb, NULL, 0);
-                //tpcb = nullptr;
-                //tcp_arg(tpcb,NULL);
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    UNLOCK_TCPIP_CORE();
-    #endif
-            }
+                return ERR_OK;
+                
+           // }
         }
+            if(state->backlogWasClosed == true){
+                if(millis() - state->closeTimer > 5000){
+                #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+                    LOCK_TCPIP_CORE();
+                #endif  
+                    tcp_abort(tpcb);
+                    myPcb = nullptr;
+                #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+                    UNLOCK_TCPIP_CORE();
+                #endif
+                    return ERR_ABRT;
+                }
+            
+            }
+        
     }
     return ERR_OK;
 }

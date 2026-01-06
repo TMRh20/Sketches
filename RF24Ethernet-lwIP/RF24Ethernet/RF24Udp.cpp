@@ -176,7 +176,7 @@ int RF24UDP::beginPacket(IPAddress ip, uint16_t port)
     
     err_t err = ERR_OK;
     ip4_addr_t myIp;
-#if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266
+    #if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266
     IP4_ADDR(&myIp, ip[0], ip[1], ip[2], ip[3]);
     ip_addr_t generic_addr;
     ip_addr_copy_from_ip4(generic_addr, myIp);
@@ -257,15 +257,8 @@ int RF24UDP::endPacket()
     return 0;
 #else
     
-    if(dataOutPos > 0){
-        
+    if(dataOutPos > 0){        
         _send();
-        //uint32_t timeout = millis() + 10000;
-            
-        //while(udpState->dataReceived == false && millis() < timeout){
-        Ethernet.tick();
-        //}
-        
         return 1;
     }
     return 0;
