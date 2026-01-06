@@ -139,7 +139,7 @@ err_t netif_output(struct netif* netif, struct pbuf* p)
         }
     }
 
-    IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("Net out: "); Serial.println(nodeAddress, OCT); );
+    IF_ETH_DEBUG_L1( Serial.print("Net out: "); Serial.println(nodeAddress, OCT); );
     
     RF24NetworkHeader headerOut(nodeAddress, EXTERNAL_DATA_TYPE);
 
@@ -586,7 +586,7 @@ void RF24EthernetClass::tick()
         if (RF24Ethernet.network.frag_ptr->message_size > 0) {
             uint16_t len = RF24Ethernet.network.frag_ptr->message_size;
             Ethernet.EthRX_Handler(RF24Ethernet.network.frag_ptr->message_buffer, len);
-            IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("Net in"););
+            IF_ETH_DEBUG_L1( Serial.println("Net in"); );
         }
     }
 
