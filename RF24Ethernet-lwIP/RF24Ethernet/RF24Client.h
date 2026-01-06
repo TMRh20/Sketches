@@ -76,14 +76,17 @@ typedef struct __attribute__((__packed__))
     #include "RF24Network_config.h"
     #define INCOMING_DATA_SIZE MAX_PAYLOAD_SIZE * 2
     #if defined TCP_MSS
+    #define LWIP_DNS 1
 extern "C" {
         #include "lwip\tcp.h"
         #include "lwip\tcpip.h"
+        //#include "lwip\dns.h"
 }
     #else
         #define ETHERNET_USING_LWIP_ARDUINO
         #include <lwIP_Arduino.h>
         #include "lwip\include\lwip\tcp.h"
+        //#include "lwip\include\lwip\dns.h"
     #endif
 #endif
 
@@ -176,7 +179,7 @@ public:
     
     
 protected:
-#if USE_LWIP != 1
+#if USE_LWIP < 1
     static uip_userdata_t all_data[UIP_CONNS];
 #else
 
@@ -200,12 +203,20 @@ protected:
         volatile uint32_t serverTimer = millis();
         volatile uint32_t cConnectionTimeout = clientConnectionTimeout;
         volatile uint32_t clientTimer = millis();
+        volatile uint32_t closeTimer = millis();
         volatile err_t result = 0;
     };
 
     /** Connection states */
     static ConnectState* gState;
+    
+    struct DNSState
+    {
+        volatile bool testing;
+    };
 
+    static DNSState* dnsState;
+    
     /** Used internally when data is ACKed */
     static err_t sent_callback(void* arg, struct tcp_pcb* tpcb, uint16_t len);
     /** Used internally for receiving data via the client functions */
@@ -218,13 +229,13 @@ protected:
     /** Used to set client timeouts. Whenever there is no data sent, received, or acked in 
     * the given timeout period (mS) the connection will be closed. Set to 0 to disable
     **/
-    static void setConnectionTimeout(uint32_t timeout);
+    //static void setConnectionTimeout(uint32_t timeout);
 
 
 #endif
 
 private:
-#if USE_LWIP != 1
+#if USE_LWIP < 1
     RF24Client(struct uip_conn* _conn);
     RF24Client(uip_userdata_t* conn_data);
 
@@ -259,7 +270,8 @@ private:
     static err_t acceptConnection(void* arg, struct tcp_pcb* tpcb, bool setTimeout = true);
     static err_t on_connected(void* arg, struct tcp_pcb* tpcb, err_t err);
     static err_t blocking_write(struct tcp_pcb* pcb, ConnectState* fstate, const char* data, size_t len);
-    
+    static void dnsCallback(const char *name, const ip_addr_t *ipaddr, void *callback_arg);
+        
     static uint32_t clientConnectionTimeout;
     static uint32_t serverConnectionTimeout;
     static uint16_t dataSize;

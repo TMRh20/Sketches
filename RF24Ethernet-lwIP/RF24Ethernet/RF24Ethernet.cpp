@@ -20,8 +20,9 @@
 
 #include "RF24Ethernet.h"
 
-#if defined USE_LWIP
+#if USE_LWIP > 0
 RF24EthernetClass::EthQueue RF24EthernetClass::RXQueue __attribute__((aligned(4)));
+
 
 /*
 struct EthQueue
@@ -257,8 +258,7 @@ void RF24EthernetClass::setChannel(uint8_t channel)
 
 void RF24EthernetClass::begin(IPAddress ip)
 {
-    IPAddress dns = ip;
-    dns[3] = 1;
+    IPAddress dns = {8,8,8,8};
     begin(ip, dns);
 }
 
@@ -284,7 +284,7 @@ void RF24EthernetClass::begin(IPAddress ip, IPAddress dns, IPAddress gateway)
 void RF24EthernetClass::begin(IPAddress ip, IPAddress dns, IPAddress gateway, IPAddress subnet)
 {
     configure(ip, dns, gateway, subnet);
-    //LinkHandler(true);
+
 }
 
 /*******************************************************/
@@ -324,6 +324,10 @@ void RF24EthernetClass::configure(IPAddress ip, IPAddress dns, IPAddress gateway
     IP4_ADDR(&myMask, 255, 255, 255, 0);
     IP4_ADDR(&myGateway, gateway[0], gateway[1], gateway[2], gateway[3]);
     _dnsServerAddress = dns;
+    
+    /*ip4_addr_t dnsIp;
+    IP4_ADDR(&dnsIp, dns[0], dns[1], dns[2], dns[3]);
+    dns_setserver(0, &dnsIp);*/
 
     void* context = nullptr;
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING

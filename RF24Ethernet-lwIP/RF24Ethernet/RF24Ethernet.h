@@ -53,6 +53,11 @@ extern "C" {
     //#include "IPAddress.h"
     #include "RF24Client.h"
     #include "RF24Server.h"
+    #define HTONS htons
+    #include "RF24Udp.h"
+    #include "Dns.h"
+
+
 
     #if !defined ETHERNET_USING_LWIP_ARDUINO
         #include "lwip\ip.h"
@@ -84,7 +89,7 @@ extern "C" {
     #include "RF24Client.h"
     #include "RF24Server.h"
 
-    #if UIP_CONF_UDP > 0
+    #if UIP_CONF_UDP > 0 || USE_LWIP > 0
         #include "RF24Udp.h"
         #include "Dns.h"
     #endif
