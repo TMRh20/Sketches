@@ -464,8 +464,12 @@ err_t RF24Client::accept(void* arg, struct tcp_pcb* tpcb, err_t err)
     Serial.println("acc cb");
     ConnectState* state = (ConnectState*)arg;
 
+    #if !defined ESP32
     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print(" Connect From: "); IPAddress remIP; remIP[0] = ip4_addr_get_byte(&tpcb->remote_ip, 0); remIP[1] = ip4_addr_get_byte(&tpcb->remote_ip, 1); 
     remIP[2] = ip4_addr_get_byte(&tpcb->remote_ip, 2); remIP[3] = ip4_addr_get_byte(&tpcb->remote_ip, 3); Serial.println(remIP); );
+    #else
+    IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print(" Connect From: "); Serial.println(IPAddress((&tpcb->remote_ip))); );
+    #endif    
     
     if (myPcb != nullptr) {
 		
@@ -1325,7 +1329,7 @@ int RF24Client::read(uint8_t* buf, size_t size)
         if (remainder > 0) {
             memmove(&incomingData[0], &incomingData[size], dataSize - size);
         }
-        dataSize = max(0,remainder);
+        dataSize = rf24_max(0,remainder);
         return size;
     }
     return -1;

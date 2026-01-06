@@ -86,7 +86,7 @@ bool RF24EthernetClass::isUnicast(const uint8_t frame)
     return (frame & 0x01) == 0;
 }
 
-err_t RF24EthernetClass::netif_output(struct netif* netif, struct pbuf* p)
+err_t netif_output(struct netif* netif, struct pbuf* p)
 {
     void* context = netif->state;
     uint16_t total_len = 0;
@@ -152,14 +152,14 @@ err_t RF24EthernetClass::netif_output(struct netif* netif, struct pbuf* p)
     return ERR_OK;
 }
 
-err_t RF24EthernetClass::tun_netif_output(struct netif* netif, struct pbuf* p, const ip4_addr_t* ipaddr)
+err_t tun_netif_output(struct netif* netif, struct pbuf* p, const ip4_addr_t* ipaddr)
 {
     /* Since this is a TUN/L3 interface, we skip ARP (etharp_output).
        We simply call the linkoutput function to send the raw IP packet. */
     return netif->linkoutput(netif, p);
 }
 
-err_t RF24EthernetClass::netif_init(struct netif* myNetif)
+err_t netif_init(struct netif* myNetif)
 {
 
     myNetif->name[0] = 'e';

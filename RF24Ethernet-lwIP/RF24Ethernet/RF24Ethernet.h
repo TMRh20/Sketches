@@ -269,9 +269,6 @@ public:
     static void writeRXQueue(EthQueue* RXQueue, const uint8_t* ethFrame, uint16_t lenEthFrame);
 
     static netif myNetif;
-    static err_t netif_output(struct netif* netif, struct pbuf* p);
-    static err_t tun_netif_output(struct netif* netif, struct pbuf* p, const ip4_addr_t* ipaddr);
-    static err_t netif_init(struct netif* myNetif);
     static constexpr uint32_t NetIF_Speed_BPS = 1000000;
 private:
     static constexpr uint16_t ETHERNET_MTU = 1500;

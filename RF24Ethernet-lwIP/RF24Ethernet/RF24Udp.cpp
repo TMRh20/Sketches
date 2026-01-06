@@ -387,7 +387,7 @@ int RF24UDP::read(unsigned char* buffer, size_t len)
         if (remainder > 0) {
             memmove(udpDataIn, &udpDataIn[len], remainder);
         }
-        dataInPos = max(0,remainder);
+        dataInPos = rf24_max(0,remainder);
         return len;
         
     }
@@ -444,12 +444,17 @@ IPAddress RF24UDP::remoteIP()
 #else
     
     if(udpPcb != nullptr){
+        #if !defined ESP32
         IPAddress remIP; 
         remIP[0] = ip4_addr_get_byte(&udpPcb->remote_ip, 0);
         remIP[1] = ip4_addr_get_byte(&udpPcb->remote_ip, 1);
         remIP[2] = ip4_addr_get_byte(&udpPcb->remote_ip, 2);
         remIP[3] = ip4_addr_get_byte(&udpPcb->remote_ip, 3);
+        
         return remIP;
+        #else
+        return IPAddress((&udpPcb->remote_ip));
+        #endif
     }
 return IPAddress{0,0,0,0};
 #endif
