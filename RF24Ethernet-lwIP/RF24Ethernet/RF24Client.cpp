@@ -328,9 +328,9 @@ err_t RF24Client::serverTimeouts(void* arg, struct tcp_pcb* tpcb)
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     LOCK_TCPIP_CORE();
     #endif
-                tcp_poll(tpcb, NULL, 0);
-                tpcb = nullptr;
-                tcp_arg(tpcb,NULL);
+                //tcp_poll(tpcb, NULL, 0);
+                //tpcb = nullptr;
+                //tcp_arg(tpcb,NULL);
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     UNLOCK_TCPIP_CORE();
     #endif
@@ -766,8 +766,19 @@ int RF24Client::connect(const char* host, uint16_t port)
     }
 #elif USE_LWIP > 0
 
-/*    ip4_addr_t dnsResult;
-    err_t err = dns_gethostbyname_addrtype(host, &dnsResult, dnsCallback, dnsState, LWIP_DNS_ADDRTYPE_IPV4);*/
+    DNSClient dns;
+    IPAddress remote_addr;
+
+    dns.begin(RF24EthernetClass::_dnsServerAddress);
+    ret = dns.getHostByName(host, remote_addr);
+
+    if (ret == 1)
+    {
+    #if defined(ETH_DEBUG_L1) || defined(RF24ETHERNET_DEBUG_DNS)
+        Serial.println(F("*UIP Got DNS*"));
+    #endif
+        return connect(remote_addr, port);
+    }
 
 #else  // ! UIP_UDP
     // Do something with the input parameters to prevent compile time warnings
@@ -1305,14 +1316,17 @@ int RF24Client::read(uint8_t* buf, size_t size)
 
     return -1;
 #else
-    if (available()) {
-        if (dataSize >= size) {
-            memcpy(&buf[0], &incomingData[0], size);
-            memmove(&incomingData[0], &incomingData[size], dataSize - size);
+    
 
-            dataSize -= size;
-            return size;
+    if (available()) {
+        
+        size_t remainder = dataSize - size;
+        memcpy(&buf[0], &incomingData[0], size);
+        if (remainder > 0) {
+            memmove(&incomingData[0], &incomingData[size], dataSize - size);
         }
+        dataSize = max(0,remainder);
+        return size;
     }
     return -1;
 #endif

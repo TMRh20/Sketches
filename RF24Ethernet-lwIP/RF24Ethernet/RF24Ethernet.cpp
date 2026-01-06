@@ -86,7 +86,7 @@ bool RF24EthernetClass::isUnicast(const uint8_t frame)
     return (frame & 0x01) == 0;
 }
 
-err_t netif_output(struct netif* netif, struct pbuf* p)
+err_t RF24EthernetClass::netif_output(struct netif* netif, struct pbuf* p)
 {
     void* context = netif->state;
     uint16_t total_len = 0;
@@ -152,21 +152,21 @@ err_t netif_output(struct netif* netif, struct pbuf* p)
     return ERR_OK;
 }
 
-err_t tun_netif_output(struct netif* netif, struct pbuf* p, const ip4_addr_t* ipaddr)
+err_t RF24EthernetClass::tun_netif_output(struct netif* netif, struct pbuf* p, const ip4_addr_t* ipaddr)
 {
     /* Since this is a TUN/L3 interface, we skip ARP (etharp_output).
        We simply call the linkoutput function to send the raw IP packet. */
     return netif->linkoutput(netif, p);
 }
 
-err_t netif_init(struct netif* myNetif)
+err_t RF24EthernetClass::netif_init(struct netif* myNetif)
 {
 
     myNetif->name[0] = 'e';
     myNetif->name[1] = '0';
     myNetif->linkoutput = netif_output;
     myNetif->output = tun_netif_output;
-    myNetif->mtu = MAX_PAYLOAD_SIZE - 14; //ETHERNET_MTU;
+    myNetif->mtu = MAX_PAYLOAD_SIZE; //ETHERNET_MTU;
     myNetif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_IGMP | NETIF_FLAG_MLD6 | NETIF_FLAG_LINK_UP;
     myNetif->hostname = "TmrNet";
     MIB2_INIT_NETIF(&Ethernet.myNetif, snmp_ifType_ppp, Ethernet.NetIF_Speed_BPS);
@@ -325,10 +325,6 @@ void RF24EthernetClass::configure(IPAddress ip, IPAddress dns, IPAddress gateway
     IP4_ADDR(&myGateway, gateway[0], gateway[1], gateway[2], gateway[3]);
     _dnsServerAddress = dns;
     
-    /*ip4_addr_t dnsIp;
-    IP4_ADDR(&dnsIp, dns[0], dns[1], dns[2], dns[3]);
-    dns_setserver(0, &dnsIp);*/
-
     void* context = nullptr;
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     LOCK_TCPIP_CORE();
@@ -487,10 +483,9 @@ void RF24EthernetClass::tick()
 #elif defined(ARDUINO_ARCH_ESP32)
     const TickType_t xDelay = pdMS_TO_TICKS(1);
     vTaskDelay(xDelay);
-#else
-    #ifdef __WFE;
-    __WFE();
-    #endif
+#elif defined(ARDUINO_ARCH_NRF52)
+    yield();
+
 #endif
 #ifndef USE_LWIP
     uint8_t result = RF24Ethernet.mesh.update();
