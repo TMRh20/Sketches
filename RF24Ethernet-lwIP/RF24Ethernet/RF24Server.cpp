@@ -92,6 +92,7 @@ void RF24Server::restart()
     if (RF24Client::gState == nullptr) {
         RF24Client::gState = new RF24Client::ConnectState;
     }
+    
     RF24Client::gState->finished = false;
     RF24Client::gState->connected = false;
     RF24Client::gState->result = 0;
