@@ -65,9 +65,18 @@ RF24Client RF24Server::available()
 void RF24Server::restart()
 {
 
-#if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+}
+/*************************************************************/
+
+void RF24Server::begin()
+{
+#if USE_LWIP != 1
+    uip_listen(_port);
+#else
+
+    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     LOCK_TCPIP_CORE();
-#endif
+    #endif
 
     bool closed = false;
 
@@ -81,15 +90,13 @@ void RF24Server::restart()
         tcp_err(sPcb, RF24Client::error_callback);
     }
 
-    if (!doOnce) {
-        err_t err = tcp_bind(sPcb, IP_ADDR_ANY, RF24Server::_port);
+    err_t err = tcp_bind(sPcb, IP_ADDR_ANY, RF24Server::_port);
 
-        if (err != ERR_OK) {
-            //Debug print
-            IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("unable to bind to port"););
-        }
+    if (err != ERR_OK) {
+        //Debug print
+        IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("unable to bind to port"););
     }
-    doOnce = true;
+
     if (RF24Client::gState == nullptr) {
         RF24Client::gState = new RF24Client::ConnectState;
     }
@@ -106,22 +113,12 @@ void RF24Server::restart()
       tcp_arg(sPcb, RF24Client::gState);
       tcp_accept(sPcb, RF24Client::accept);
     }else{
-        Serial.println("Server failed to re-initialize");
+        Serial.println("Server failed to initialize");
     }
-#if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     UNLOCK_TCPIP_CORE();
-#endif
+    #endif
 
-    RF24Ethernet.tick();
-}
-/*************************************************************/
-
-void RF24Server::begin()
-{
-#if USE_LWIP != 1
-    uip_listen(_port);
-#else
-    restart();
 #endif
     RF24Ethernet.tick();
 }

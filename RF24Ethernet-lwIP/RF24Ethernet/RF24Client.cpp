@@ -44,7 +44,7 @@ bool RF24Client::serverActive;
 uint32_t RF24Client::clientConnectionTimeout;
 uint32_t RF24Client::serverConnectionTimeout;
 uint8_t RF24Client::simpleCounter;
-extern struct tcp_pcb *tcp_active_pcbs;         // List of all active TCP PCBs
+
 /***************************************************************************************************/
 
 // Called when the remote host acknowledges receipt of data
@@ -329,7 +329,7 @@ err_t RF24Client::serverTimeouts(void* arg, struct tcp_pcb* tpcb)
                 #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
                     UNLOCK_TCPIP_CORE();
                 #endif
-                    RF24Server::restart();
+                    //RF24Server::restart();
                     return ERR_ABRT;
                 }
             
@@ -410,7 +410,7 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                 #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
                     UNLOCK_TCPIP_CORE();
                 #endif
-                        RF24Server::restart();
+                        //RF24Server::restart();
                         return ERR_ABRT;
                       }
                   }
@@ -418,7 +418,7 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
             }
         }        
     }
-	/*if (tpcb != nullptr) {
+	if (tpcb != nullptr) {
        if(state != nullptr){
         if (millis() - state->connectTimestamp > state->sConnectionTimeout) {
             if(state->backlogWasClosed == false){
@@ -453,7 +453,7 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
             }
         }
        }
-    }*/
+    }
         
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     UNLOCK_TCPIP_CORE();
@@ -477,28 +477,7 @@ if(tpcb != nullptr){
     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print(" Connect From: "); Serial.println(IPAddress((&tpcb->remote_ip))); );
     #endif
 }
-    /*uint8_t counter = 0;
-    struct tcp_pcb *pcb;
-    for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) {
-      counter++;
-      Serial.print("Count: ");
-      Serial.print(counter);      
-      Serial.print(" IP: ");
-
-      #ifndef ESP32
-      IPAddress remIP; 
-      remIP[0] = ip4_addr_get_byte(&pcb->remote_ip, 0);
-      remIP[1] = ip4_addr_get_byte(&pcb->remote_ip, 1);
-      remIP[2] = ip4_addr_get_byte(&pcb->remote_ip, 2);
-      remIP[3] = ip4_addr_get_byte(&pcb->remote_ip, 3);
-        
-      Serial.println(remIP);
-      #else{
-      Serial.println(IPAddress(&pcb->remote_ip));
-      #endif
-    }*/
-    
-    //counter = 0;    
+ 
     if (myPcb != nullptr) {
 		
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("got ACC with already conn: "); Serial.println(accepts); );
@@ -912,7 +891,7 @@ void RF24Client::stop()
         }
     }
 
-    RF24Ethernet.tick();
+    //RF24Ethernet.tick();
 #endif
 }
 
