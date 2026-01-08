@@ -25,7 +25,7 @@
 
 #include "RF24Ethernet.h"
 
-#if UIP_CONF_UDP > 0 || USE_LWIP > 0
+#if UIP_CONF_UDP > 0 || RF24ETHERNET_USE_UDP > 0
 
     #include <Udp.h>
 
@@ -45,7 +45,7 @@ typedef struct
     boolean send;
 } uip_udp_userdata_t;
 
-#elif USE_LWIP > 0
+#elif RF24ETHERNET_USE_UDP
 
 
 
@@ -67,7 +67,7 @@ private:
     struct uip_udp_conn* _uip_udp_conn;
 
     uip_udp_userdata_t appdata;
-#elif USE_LWIP > 0
+#elif RF24ETHERNET_USE_UDP
     static struct udp_pcb* udpPcb;
     
     static int8_t udpDataIn[MAX_PAYLOAD_SIZE-14];
@@ -169,7 +169,7 @@ private:
 
     friend class RF24EthernetClass;
     friend class RF24Client;
-    #if USE_LWIP < 1
+    #ifndef RF24ETHERNET_USE_UDP
         static void _send(uip_udp_userdata_t* data);
     #else
         static void _send();

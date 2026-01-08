@@ -80,13 +80,13 @@ typedef struct __attribute__((__packed__))
 extern "C" {
         #include "lwip\tcp.h"
         #include "lwip\tcpip.h"
-        //#include "lwip\dns.h"
+        #include "lwip\raw.h"
 }
     #else
         #define ETHERNET_USING_LWIP_ARDUINO
         #include <lwIP_Arduino.h>
         #include "lwip\include\lwip\tcp.h"
-        //#include "lwip\include\lwip\dns.h"
+        #include "lwip\include\lwip\raw.h"
     #endif
 #endif
 

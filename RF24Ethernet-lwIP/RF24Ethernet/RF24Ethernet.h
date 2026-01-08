@@ -34,6 +34,9 @@
         #ifndef USE_LWIP
             #define USE_LWIP 1
         #endif
+        #ifndef RF24ETHERNET_USE_UDP
+            #define RF24ETHERNET_USE_UDP 1
+        #endif
     #endif
 #endif
 #if USE_LWIP < 1
@@ -231,8 +234,8 @@ public:
 
     uint32_t networkCorruption;
 
-    static constexpr unsigned MAX_FRAME_SIZE = MAX_PAYLOAD_SIZE; // packet size excluding FCS
-    static constexpr unsigned MIN_FRAME_SIZE = 4;
+    static constexpr unsigned MAX_FRAME_SIZE = MAX_PAYLOAD_SIZE-14; // packet size excluding FCS
+    static constexpr unsigned MIN_FRAME_SIZE = 60;
 
     static constexpr unsigned MAX_RX_QUEUE = 5;
 

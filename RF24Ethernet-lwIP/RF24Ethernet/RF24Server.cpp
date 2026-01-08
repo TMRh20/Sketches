@@ -68,17 +68,18 @@ void RF24Server::restart()
 #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     LOCK_TCPIP_CORE();
 #endif
-    if (sPcb) {
-        if (sPcb->state == ESTABLISHED || sPcb->state == SYN_SENT || sPcb->state == SYN_RCVD) {
-            tcp_close(sPcb);
-        }
-        Ethernet.tick();
+
+    bool closed = false;
+
+    if(sPcb == nullptr){
+      sPcb = tcp_new();
     }
-
-    sPcb = tcp_new();
-
+    
     RF24Client::serverActive = true;
-    tcp_err(sPcb, RF24Client::error_callback);
+    
+    if(sPcb != nullptr){
+        tcp_err(sPcb, RF24Client::error_callback);
+    }
 
     if (!doOnce) {
         err_t err = tcp_bind(sPcb, IP_ADDR_ANY, RF24Server::_port);
@@ -93,15 +94,20 @@ void RF24Server::restart()
         RF24Client::gState = new RF24Client::ConnectState;
     }
     
-    RF24Client::gState->finished = false;
-    RF24Client::gState->connected = false;
-    RF24Client::gState->result = 0;
-    RF24Client::gState->waiting_for_ack = false;
-
+    if(RF24Client::gState != nullptr){
+        RF24Client::gState->finished = false;
+        RF24Client::gState->connected = false;
+        RF24Client::gState->result = 0;
+        RF24Client::gState->waiting_for_ack = false;
+    }
     sPcb = tcp_listen_with_backlog(sPcb, 1);
-
-    tcp_arg(sPcb, RF24Client::gState);
-    tcp_accept(sPcb, RF24Client::accept);
+  
+    if(sPcb != nullptr){
+      tcp_arg(sPcb, RF24Client::gState);
+      tcp_accept(sPcb, RF24Client::accept);
+    }else{
+        Serial.println("Server failed to re-initialize");
+    }
 #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     UNLOCK_TCPIP_CORE();
 #endif
