@@ -151,14 +151,14 @@ err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, con
 void RF24Client::error_callback(void* arg, err_t err)
 {
 
-    /*ConnectState* state = (ConnectState*)arg;
+    ConnectState* state = (ConnectState*)arg;
     if (state != nullptr) {
         state->result = err;
         state->connected = false;
         state->finished = true; // Break the blocking loop
         state->waiting_for_ack = false;
-    }*/
-    //IF_RF24ETHERNET_DEBUG_CLIENT(  Serial.println("err cb: ");  Serial.println((int)err); );    
+    }
+    IF_RF24ETHERNET_DEBUG_CLIENT(  Serial.println("err cb: ");  Serial.println((int)err); );    
 }
 
 /***************************************************************************************************/

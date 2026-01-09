@@ -112,7 +112,7 @@ err_t netif_output(struct netif* netif, struct pbuf* p)
     if (Ethernet.mesh.mesh_address != 0) {
         if (gwIP[3] != buf[19]) {                                       // If not sending to the gateway
             IPAddress local_ip = Ethernet.localIP();
-            if(local_ip[0] == buf[16] && local_ip[0] == buf[17]){       // If we are local within the nRF24 network      
+            if(local_ip[0] == buf[16] && local_ip[1] == buf[17]){       // If we are local within the nRF24 network
                 //Request an address lookup from the Master node
                 nodeAddress = Ethernet.mesh.getAddress((char)buf[19]);  // Do an address lookup
                 if (nodeAddress < 0) {
@@ -123,7 +123,7 @@ err_t netif_output(struct netif* netif, struct pbuf* p)
     }
     else {
         IPAddress local_ip = Ethernet.localIP();
-        if(local_ip[0] == buf[16] && local_ip[0] == buf[17]){          // If within the nRF24 radio network, do a lookup, else send to self (00)
+        if(local_ip[0] == buf[16] && local_ip[1] == buf[17]){          // If within the nRF24 radio network, do a lookup, else send to self (00)
             nodeAddress = Ethernet.mesh.getAddress((char)buf[19]);
             if (nodeAddress < 0) {
                 return ERR_OK;
