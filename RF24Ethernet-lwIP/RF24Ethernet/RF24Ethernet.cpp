@@ -312,7 +312,7 @@ void RF24EthernetClass::configure(IPAddress ip, IPAddress dns, IPAddress gateway
 
     ip4_addr_t myIp, myMask, myGateway;
     IP4_ADDR(&myIp, ip[0], ip[1], ip[2], ip[3]);
-    IP4_ADDR(&myMask, 255, 255, 255, 0);
+    IP4_ADDR(&myMask, subnet[0], subnet[1], subnet[2], subnet[3]);
     IP4_ADDR(&myGateway, gateway[0], gateway[1], gateway[2], gateway[3]);
     _dnsServerAddress = dns;
     
