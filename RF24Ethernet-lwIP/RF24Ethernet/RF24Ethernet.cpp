@@ -122,9 +122,12 @@ err_t netif_output(struct netif* netif, struct pbuf* p)
         }
     }
     else {
-        nodeAddress = Ethernet.mesh.getAddress((char)buf[19]);
-        if (nodeAddress < 0) {
-            return ERR_OK;
+        IPAddress local_ip = Ethernet.localIP();
+        if(local_ip[0] == buf[16] && local_ip[0] == buf[17]){          // If within the nRF24 radio network, do a lookup, else send to self (00)
+            nodeAddress = Ethernet.mesh.getAddress((char)buf[19]);
+            if (nodeAddress < 0) {
+                return ERR_OK;
+            }
         }
     }
 
