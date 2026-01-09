@@ -92,20 +92,24 @@ void RF24Server::begin()
         IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("unable to bind to port"););
     }
 
-    if (RF24Client::gState == nullptr) {
-        RF24Client::gState = new RF24Client::ConnectState;
+    if (RF24Client::gState[0] == nullptr) {
+        RF24Client::gState[0] = new RF24Client::ConnectState;
     }
     
-    if(RF24Client::gState != nullptr){
-        RF24Client::gState->finished = false;
-        RF24Client::gState->connected = false;
-        RF24Client::gState->result = 0;
-        RF24Client::gState->waiting_for_ack = false;
+    if (RF24Client::gState[1] == nullptr) {
+        RF24Client::gState[1] = new RF24Client::ConnectState;
+    }
+    
+    if(RF24Client::gState[0] != nullptr){
+        RF24Client::gState[0]->finished = false;
+        RF24Client::gState[0]->connected = false;
+        RF24Client::gState[0]->result = 0;
+        RF24Client::gState[0]->waiting_for_ack = false;
     }
     sPcb = tcp_listen_with_backlog(sPcb, 1);
   
     if(sPcb != nullptr){
-      tcp_arg(sPcb, RF24Client::gState);
+      tcp_arg(sPcb, RF24Client::gState[0]);
       tcp_accept(sPcb, RF24Client::accept);
     }else{
         Serial.println("Server failed to initialize");

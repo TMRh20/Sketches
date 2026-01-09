@@ -366,14 +366,14 @@ void RF24EthernetClass::listen(uint16_t port)
         IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("unable to bind to port"););
     }
 
-    RF24Client::gState->finished = false;
-    RF24Client::gState->connected = false;
-    RF24Client::gState->result = 0;
-    RF24Client::gState->waiting_for_ack = false;
+    RF24Client::gState[0]->finished = false;
+    RF24Client::gState[0]->connected = false;
+    RF24Client::gState[0]->result = 0;
+    RF24Client::gState[0]->waiting_for_ack = false;
 
     RF24Client::myPcb = tcp_listen(RF24Client::myPcb);
 
-    tcp_arg(RF24Client::myPcb, &RF24Client::gState);
+    tcp_arg(RF24Client::myPcb, &RF24Client::gState[0]);
     tcp_accept(RF24Client::myPcb, RF24Client::accept);
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     UNLOCK_TCPIP_CORE();

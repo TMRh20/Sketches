@@ -35,9 +35,9 @@ uip_userdata_t RF24Client::all_data[UIP_CONNS];
 
     #include "RF24Ethernet.h"
 
-RF24Client::ConnectState* RF24Client::gState;
-char RF24Client::incomingData[INCOMING_DATA_SIZE];
-uint16_t RF24Client::dataSize = 0;
+RF24Client::ConnectState* RF24Client::gState[2];
+char RF24Client::incomingData[2][INCOMING_DATA_SIZE];
+uint16_t RF24Client::dataSize[2];
 struct tcp_pcb* RF24Client::myPcb;
 bool RF24Client::serverActive;
 uint32_t RF24Client::clientConnectionTimeout;
@@ -196,10 +196,16 @@ err_t RF24Client::srecv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p
     }
 
     const uint8_t* data = static_cast<const uint8_t*>(p->payload);
-
-    if (dataSize + p->len < INCOMING_DATA_SIZE) {
-        memcpy(&incomingData[dataSize], data, p->len);
-        dataSize += p->len;
+    
+    if(state->identifier == gState[0]->identifier){ 
+        if (dataSize[0] + p->len < INCOMING_DATA_SIZE) { Serial.println("Data to buffer 0");
+            memcpy(&incomingData[0][dataSize[0]], data, p->len);
+            dataSize[0] += p->len;
+        }
+    }else
+    if (dataSize[1] + p->len < INCOMING_DATA_SIZE) { Serial.println("Data to buffer 1");
+            memcpy(&incomingData[1][dataSize[1]], data, p->len);
+            dataSize[1] += p->len;
     }
     else {
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("srecv: Out of incoming buffer space"); );
@@ -241,9 +247,9 @@ err_t RF24Client::recv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p,
         state->clientTimer = millis();
     }
     const uint8_t* data = static_cast<const uint8_t*>(p->payload);
-    if (dataSize + p->len < INCOMING_DATA_SIZE) {
-        memcpy(&incomingData[dataSize], data, p->len);
-        dataSize += p->len;
+    if (dataSize[0] + p->len < INCOMING_DATA_SIZE) {
+        memcpy(&incomingData[0][dataSize[0]], data, p->len);
+        dataSize[0] += p->len;
     }
     else {
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("recv: Out of incoming buffer space"); );
@@ -362,7 +368,11 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                     myPcb = tpcb;
                     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("----------ACCEPT delayed PCB 2--------- "); Serial.println(state->identifier); );
                     tcp_backlog_accepted(tpcb);
-
+                    memcpy(incomingData[0], incomingData[1], dataSize[1]);
+                    dataSize[0] = dataSize[1];
+                    dataSize[1] = 0;
+                    gState[0] = state;
+                    gState[1] = nullptr;
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
                     UNLOCK_TCPIP_CORE();
     #endif
@@ -402,9 +412,9 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                       }
                       if(millis() - state->closeTimer > 5000){
                           tcp_abort(tpcb);
-                          //if(state->identifier == gState->identifier){
+                          if(state->identifier == gState[0]->identifier){
                             myPcb = nullptr;
-                          //}
+                          }
                 #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
                     UNLOCK_TCPIP_CORE();
                 #endif
@@ -438,9 +448,9 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                     
                         if(millis() - state->closeTimer > 5000){
                             tcp_abort(tpcb);
-                            //if(state->identifier == gState->identifier){
+                            if(state->identifier == gState[0]->identifier){
                               myPcb = nullptr;
-                            //}
+                            }
                 #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
                     UNLOCK_TCPIP_CORE();
                 #endif
@@ -482,10 +492,14 @@ if(tpcb != nullptr){
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
         UNLOCK_TCPIP_CORE();
     #endif
+        if(gState[1] == nullptr){
+            gState[1] = new ConnectState;
+        }
         accepts++;
         tcp_backlog_delayed(tpcb);
         tcp_poll(tpcb, closed_port, 6);
-        acceptConnection(arg, tpcb, false);
+        tcp_arg(tpcb, RF24Client::gState[1]); 
+        acceptConnection(gState[1], tpcb, false);
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
         UNLOCK_TCPIP_CORE();
     #endif
@@ -494,8 +508,9 @@ if(tpcb != nullptr){
         return ERR_CLSD;  
     }
     }
-
-    acceptConnection(arg, tpcb, true);
+    
+    
+    acceptConnection(gState[0], tpcb, true);
     return ERR_OK;
 }
 
@@ -528,6 +543,7 @@ err_t RF24Client::acceptConnection(void* arg, struct tcp_pcb* tpcb, bool setTime
 
     if (setTimeout) {
         myPcb = tpcb;
+        tcp_arg(tpcb, RF24Client::gState[0]); 
     }
 
         if (state->sConnectionTimeout > 0 && setTimeout) {
@@ -619,8 +635,8 @@ uint8_t RF24Client::connected()
 #if USE_LWIP < 1
     return (data && (data->packets_in != 0 || (data->state & UIP_CLIENT_CONNECTED))) ? 1 : 0;
 #else
-    if (gState != nullptr) {
-        return gState->connected;
+    if (gState[0] != nullptr) {
+        return gState[0]->connected;
     }
     return 0;
 #endif
@@ -698,18 +714,18 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
         return 0;
     }
 
-    dataSize = 0;
-    memset(incomingData, 0, sizeof(incomingData));
+    dataSize[0] = 0;
+    memset(incomingData[0], 0, sizeof(incomingData[0]));
 
-    if (gState == nullptr) {
-        gState = new ConnectState;
+    if (gState[0] == nullptr) {
+        gState[0] = new ConnectState;
     }
-    gState->finished = false;
-    gState->connected = false;
-    gState->result = 0;
-    gState->waiting_for_ack = false;
+    gState[0]->finished = false;
+    gState[0]->connected = false;
+    gState[0]->result = 0;
+    gState[0]->waiting_for_ack = false;
 
-    tcp_arg(myPcb, gState);
+    tcp_arg(myPcb, gState[0]);
     tcp_err(myPcb, error_callback);
     tcp_recv(myPcb, recv_callback);
     //tcp_poll(myPcb, clientTimeouts, 30);
@@ -732,8 +748,8 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
         if (myPcb) {
             tcp_abort(myPcb);
         }
-        gState->connected = false;
-        gState->finished = true;
+        gState[0]->connected = false;
+        gState[0]->finished = true;
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     UNLOCK_TCPIP_CORE();
     #endif
@@ -744,15 +760,15 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
     #endif
     uint32_t timeout = millis() + 5000;
     // Simulate blocking by looping until the callback sets 'finished'
-    while (!gState->finished && millis() < timeout) {
+    while (!gState[0]->finished && millis() < timeout) {
         Ethernet.tick();
     }
     
     if(clientConnectionTimeout > 0){
-      gState->clientPollingSetup = 1;
+      gState[0]->clientPollingSetup = 1;
     }
     
-    return gState->connected;
+    return gState[0]->connected;
 
 #endif
     return 0;
@@ -853,9 +869,9 @@ void RF24Client::stop()
         if (myPcb != nullptr) {
 
             if (myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD) {
-                if(gState != nullptr){
-                  if(gState->connected == true){
-                    gState->connected = false;
+                if(gState[0] != nullptr){
+                  if(gState[0]->connected == true){
+                    gState[0]->connected = false;
                   }
                 }
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
@@ -874,8 +890,8 @@ void RF24Client::stop()
     }
     else {
         if (myPcb != nullptr) {
-            if(gState != nullptr){
-                gState->connected = false;
+            if(gState[0] != nullptr){
+                gState[0]->connected = false;
             }
 
             if (myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD) {
@@ -903,7 +919,7 @@ bool RF24Client::operator==(const RF24Client& rhs)
 #if USE_LWIP < 1
     return data && rhs.data && (data == rhs.data);
 #else
-    return dataSize > 0 ? true : false;
+    return dataSize[0] > 0 ? true : false;
 #endif
 }
 
@@ -915,7 +931,7 @@ RF24Client::operator bool()
 #if USE_LWIP < 1
     return data && (!(data->state & UIP_CLIENT_REMOTECLOSED) || data->packets_in != 0);
 #else
-    return dataSize > 0 ? true : false;
+    return dataSize[0] > 0 ? true : false;
 #endif
 }
 
@@ -984,7 +1000,7 @@ test2:
     if (myPcb == nullptr) {
         return ERR_CLSD;
     }
-    if( gState == nullptr){
+    if( gState[0] == nullptr){
         return ERR_CLSD;
     }
   
@@ -1006,7 +1022,7 @@ test2:
             return ERR_CLSD;
         }
 
-        err_t write_err = blocking_write(myPcb, gState, buffer, MAX_PAYLOAD_SIZE - 14);
+        err_t write_err = blocking_write(myPcb, gState[0], buffer, MAX_PAYLOAD_SIZE - 14);
         position += MAX_PAYLOAD_SIZE - 14;
         size -= MAX_PAYLOAD_SIZE - 14;
         Ethernet.tick();
@@ -1021,7 +1037,7 @@ test2:
         return ERR_CLSD;
     }
 
-    err_t write_err = blocking_write(myPcb, gState, buffer, size);
+    err_t write_err = blocking_write(myPcb, gState[0], buffer, size);
 
     if (write_err == ERR_OK) {
         return (size);
@@ -1294,7 +1310,7 @@ int RF24Client::_available(uint8_t* data)
         return u->dataCnt;
     }
 #else
-    return dataSize;
+    return dataSize[0];
 #endif
     return 0;
 }
@@ -1352,12 +1368,12 @@ int RF24Client::read(uint8_t* buf, size_t size)
 
     if (available()) {
         
-        int32_t remainder = dataSize - size;
-        memcpy(&buf[0], &incomingData[0], size);
+        int32_t remainder = dataSize[0] - size;
+        memcpy(&buf[0], &incomingData[0][0], size);
         if (remainder > 0) {
-            memmove(&incomingData[0], &incomingData[size], dataSize - size);
+            memmove(&incomingData[0][0], &incomingData[0][size], dataSize[0] - size);
         }
-        dataSize = rf24_max(0,remainder);
+        dataSize[0] = rf24_max(0,remainder);
         return size;
     }
     return -1;
@@ -1383,7 +1399,7 @@ int RF24Client::peek()
 #if USE_LWIP < 1
         return data->myData[data->in_pos];
 #else
-        return incomingData[0];
+        return incomingData[0][0];
 #endif
     }
     return -1;

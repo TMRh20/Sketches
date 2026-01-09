@@ -208,7 +208,7 @@ protected:
     };
 
     /** Connection states */
-    static ConnectState* gState;
+    static ConnectState* gState[2];
     
     /** Used internally when data is ACKed */
     static err_t sent_callback(void* arg, struct tcp_pcb* tpcb, uint16_t len);
@@ -262,10 +262,10 @@ private:
         
     static uint32_t clientConnectionTimeout;
     static uint32_t serverConnectionTimeout;
-    static uint16_t dataSize;
+    static uint16_t dataSize[2];
     static struct tcp_pcb* myPcb; // = nullptr;//tcp_new();// = nullptr;//tcp_new();
     
-    static char incomingData[INCOMING_DATA_SIZE];
+    static char incomingData[2][INCOMING_DATA_SIZE];
     static bool serverActive;
     static uint8_t simpleCounter;
     
