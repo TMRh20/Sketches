@@ -53,14 +53,11 @@ extern "C" {
     #endif
 
     #include "ethernet_comp.h"
-    //#include "IPAddress.h"
     #include "RF24Client.h"
     #include "RF24Server.h"
     #define HTONS htons
     #include "RF24Udp.h"
     #include "Dns.h"
-
-
 
     #if !defined ETHERNET_USING_LWIP_ARDUINO
         #include "lwip\ip.h"
@@ -86,7 +83,7 @@ extern "C" {
     #include <RF24Mesh.h>
 #endif
 
-#if USE_LWIP != 1
+#if USE_LWIP < 1
     #include "ethernet_comp.h"
     #include "IPAddress.h"
     #include "RF24Client.h"
@@ -131,9 +128,9 @@ extern "C" {
             uip_ethaddr.addr[5] = eaddr[5]; \
         } while (0)
 
-#else
 
-#endif
+#endif  //USE_LWIP < 1
+
 /**
  * @warning <b>This is used internally. Use IPAddress instead. </b>
  */
@@ -141,6 +138,8 @@ typedef struct
 {
     int a, b, c, d;
 } IP_ADDR;
+
+
 
 class RF24;
 template<class radio_t>
@@ -234,22 +233,6 @@ public:
 
     uint32_t networkCorruption;
 
-    static constexpr unsigned MAX_FRAME_SIZE = MAX_PAYLOAD_SIZE-14; // packet size excluding FCS
-    static constexpr unsigned MIN_FRAME_SIZE = 60;
-
-    static constexpr unsigned MAX_RX_QUEUE = 5;
-
-    struct EthQueue
-    {
-        uint8_t data[MAX_RX_QUEUE][MAX_FRAME_SIZE];
-        uint16_t len[MAX_RX_QUEUE];
-        uint32_t nRead;
-        uint32_t nWrite;
-    };
-    static EthQueue RXQueue __attribute__((aligned(4)));
-
-    typedef uint32_t err_t;
-    static bool isUnicast(const uint8_t frame);
 
 #if !defined NRF52_RADIO_LIBRARY
     RF24Network& network;
@@ -266,22 +249,38 @@ public:
 
 #if USE_LWIP > 0
 
+    static constexpr unsigned MAX_FRAME_SIZE = MAX_PAYLOAD_SIZE-14; // packet size excluding FCS
+    static constexpr unsigned MIN_FRAME_SIZE = 60;
+    static constexpr unsigned MAX_RX_QUEUE = 5;
+    static constexpr uint32_t NetIF_Speed_BPS = 1000000;
+    static netif myNetif;
+    
+    struct EthQueue
+    {
+        uint8_t data[MAX_RX_QUEUE][MAX_FRAME_SIZE];
+        uint16_t len[MAX_RX_QUEUE];
+        uint32_t nRead;
+        uint32_t nWrite;
+    };
+    static EthQueue RXQueue __attribute__((aligned(4)));
+
+    typedef uint32_t err_t;
+    static bool isUnicast(const uint8_t frame);
     /** Used internally to initiallize incoming data queue */
     static void initRXQueue(EthQueue* RXQueue);
     /** Used internally to write to the internall data queue */
     static void writeRXQueue(EthQueue* RXQueue, const uint8_t* ethFrame, uint16_t lenEthFrame);
 
-    static netif myNetif;
-    static constexpr uint32_t NetIF_Speed_BPS = 1000000;
+
 private:
     static constexpr uint16_t ETHERNET_MTU = 1500;
     static constexpr uint8_t MacAddr[6] = {0, 1, 2, 3, 4};
+    static bool isConnected;
     
     static pbuf* readRXQueue(EthQueue* RXQueue);
 
     static void EthRX_Handler(const uint8_t* ethFrame, const uint16_t lenEthFrame);
-    static bool isConnected;
-    static bool dataBufferEmpty;
+
 #endif
 
 
@@ -357,7 +356,7 @@ typedef RF24EthernetClass RF52EthernetClass;
 /**
  * @example mqtt_basic.ino
  *
- * This is the example taken from the PubSub library (https://github.com/knolleary/pubsubclient) & slightly modified to include RF24Ethernet/RF24Mesh.
+ * This is the example taken from the MQTT library https://github.com/256dpi/arduino-mqtt/ & slightly modified to include RF24Ethernet/RF24Mesh.
  */
 
 /**
@@ -372,17 +371,15 @@ typedef RF24EthernetClass RF52EthernetClass;
  */
 
 /**
- * @example SLIP_Gateway.ino
+ * @example InteractiveServer_Mesh_Headless.ino
  *
- * This example demonstrates how to use an Arduino as a gateway to a SLIP enabled device.
+ * This example demonstrates "headless' use of a server, without a gateway device like Raspberry Pi/Linux.
  */
 
 /**
- * @example SLIP_InteractiveServer.ino
+ * @example SimpleClient_Mesh_Headless.ino
  *
- * This example demonstrates how to use RF24Mesh with RF24Ethernet when working with a SLIP or TUN interface.
- * <br>This example uses [HTML.h](SLIP__InteractiveServer_2HTML_8h.html) from the
- * example's directory.
+ * This example demonstrates "headless" use of a client, without a gateway device like Raspberry Pi/Linux
  */
 
 #endif // RF24Ethernet_h

@@ -28,7 +28,7 @@
 //#define UIP_SOCKET_NUMPACKETS 5
 //#endif
 
-#if USE_LWIP != 1
+#if USE_LWIP < 1
     #define UIP_CLIENT_CONNECTED    0x10
     #define UIP_CLIENT_CLOSE        0x20
     #define UIP_CLIENT_REMOTECLOSED 0x40
@@ -210,13 +210,6 @@ protected:
     /** Connection states */
     static ConnectState* gState;
     
-    struct DNSState
-    {
-        volatile bool testing;
-    };
-
-    static DNSState* dnsState;
-    
     /** Used internally when data is ACKed */
     static err_t sent_callback(void* arg, struct tcp_pcb* tpcb, uint16_t len);
     /** Used internally for receiving data via the client functions */
@@ -236,21 +229,19 @@ protected:
 
 private:
 #if USE_LWIP < 1
+
     RF24Client(struct uip_conn* _conn);
     RF24Client(uip_userdata_t* conn_data);
 
     uip_userdata_t* data;
 
     static int _available(uip_userdata_t*);
-
     static uip_userdata_t* _allocateData();
     static size_t _write(uip_userdata_t*, const uint8_t* buf, size_t size);
 
-    friend class RF24EthernetClass;
-    friend class RF24Server;
-
     friend void serialip_appcall(void);
     friend void uip_log(char* msg);
+    
 #else
     RF24Client(uint32_t data);
     RF24Client(uint8_t data);
@@ -258,9 +249,6 @@ private:
     static size_t _write(uint8_t* data, const uint8_t* buf, size_t size);
     static int _available(uint8_t* data);
 
-    friend class RF24EthernetClass;
-    friend class RF24Server;
-    
     static err_t accept(void* arg, struct tcp_pcb* tpcb, err_t err);
     static err_t closed(void* arg, struct tcp_pcb* tpcb, err_t err);
     static err_t closed_port(void* arg, struct tcp_pcb* tpcb);
@@ -282,6 +270,10 @@ private:
     static uint8_t simpleCounter;
     
 #endif
+
+    friend class RF24EthernetClass;
+    friend class RF24Server;
+    
 };
 
 #endif // RF24CLIENT_H

@@ -303,8 +303,10 @@ size_t RF24UDP::write(const uint8_t* buffer, size_t size)
 // Returns the size of the packet in bytes, or 0 if no packets are available
 int RF24UDP::parsePacket()
 {
-#ifndef RF24ETHERNET_USE_UDP
     RF24EthernetClass::tick();
+    
+#ifndef RF24ETHERNET_USE_UDP
+    
     int size = appdata.packet_in_size;
 
     IF_RF24ETHERNET_DEBUG_UDP(if (appdata.packet_in != 0) { Serial.print(F("RF24UDP udp parsePacket freeing previous packet: ")); Serial.println(appdata.packet_in); });
@@ -318,7 +320,6 @@ int RF24UDP::parsePacket()
 
     return size;
 #else
-    RF24EthernetClass::tick();
 
     return dataInPos;
 #endif
@@ -449,7 +450,7 @@ IPAddress RF24UDP::remoteIP()
         return IPAddress((&udpPcb->remote_ip));
         #endif
     }
-return IPAddress{0,0,0,0};
+    return IPAddress{0,0,0,0};
 #endif
 }
 
@@ -571,8 +572,6 @@ void RF24UDP::_send()
         }
         udpState->dataReceived = false;
         udp_recv(udpPcb, receiveUdp, udpState);
-        //RF24NetworkHeader headerOut(00, EXTERNAL_DATA_TYPE);
-        //RF24Ethernet.network.write(headerOut, udpData, dataPos);
         
         pbuf* p = pbuf_alloc(PBUF_RAW, dataOutPos, PBUF_RAM);
         if (p) {

@@ -22,20 +22,6 @@
 
 #if USE_LWIP > 0
 RF24EthernetClass::EthQueue RF24EthernetClass::RXQueue __attribute__((aligned(4)));
-
-
-/*
-struct EthQueue
-{
-  uint8_t data[MAX_RX_QUEUE][MAX_FRAME_SIZE];
-  uint16_t len[MAX_RX_QUEUE];
-  uint32_t nRead;
-  uint32_t nWrite;
-};
-static EthQueue RXQueue __attribute__((aligned(4)));
-*/
-
-bool RF24EthernetClass::dataBufferEmpty;
 netif RF24EthernetClass::myNetif;
 
 void RF24EthernetClass::initRXQueue(EthQueue* RXQueue)
@@ -122,15 +108,17 @@ err_t netif_output(struct netif* netif, struct pbuf* p)
     IPAddress gwIP = Ethernet.gatewayIP();
     int16_t nodeAddress = 0;
 
-    //If not sending to the gatway
-
+    //If not the master node
     if (Ethernet.mesh.mesh_address != 0) {
-        if (gwIP[3] != buf[19]) {
-            //Request an address lookup from the Master node
-            nodeAddress = Ethernet.mesh.getAddress((char)buf[19]);
-            if (nodeAddress < 0) {
-                nodeAddress = 0;
-            }
+        if (gwIP[3] != buf[19]) {                                       // If not sending to the gateway
+            IPAddress local_ip = Ethernet.localIP();
+            if(local_ip[0] == buf[16] && local_ip[0] == buf[17]){       // If we are local within the nRF24 network      
+                //Request an address lookup from the Master node
+                nodeAddress = Ethernet.mesh.getAddress((char)buf[19]);  // Do an address lookup
+                if (nodeAddress < 0) {
+                    nodeAddress = 0;                                    // If the result is negative, send to master
+                }
+            }                                                           // If this address is outside the nRF24 network, it will be send to master (00)
         }
     }
     else {
@@ -380,10 +368,7 @@ void RF24EthernetClass::listen(uint16_t port)
     RF24Client::gState->result = 0;
     RF24Client::gState->waiting_for_ack = false;
 
-    delay(1000);
     RF24Client::myPcb = tcp_listen(RF24Client::myPcb);
-
-    //}
 
     tcp_arg(RF24Client::myPcb, &RF24Client::gState);
     tcp_accept(RF24Client::myPcb, RF24Client::accept);
@@ -478,15 +463,13 @@ void RF24EthernetClass::EthRX_Handler(const uint8_t* ethFrame, const uint16_t le
 void RF24EthernetClass::tick()
 {
 
-#if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_RP2040) || defined (ARDUINO_ARCH_NRF52)
     yield();
 #elif defined(ARDUINO_ARCH_ESP32)
     const TickType_t xDelay = pdMS_TO_TICKS(1);
     vTaskDelay(xDelay);
-#elif defined(ARDUINO_ARCH_NRF52)
-    yield();
-
 #endif
+
 #ifndef USE_LWIP
     uint8_t result = RF24Ethernet.mesh.update();
 

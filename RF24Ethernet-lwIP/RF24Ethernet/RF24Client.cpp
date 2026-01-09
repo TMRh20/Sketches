@@ -18,7 +18,7 @@
 
 #define UIP_TCP_PHYH_LEN UIP_LLH_LEN + UIP_IPTCPH_LEN
 
-#if USE_LWIP != 1
+#if USE_LWIP < 1
 uip_userdata_t RF24Client::all_data[UIP_CONNS];
 #else
    // #define LWIP_ERR_T uint32_t
@@ -36,7 +36,6 @@ uip_userdata_t RF24Client::all_data[UIP_CONNS];
     #include "RF24Ethernet.h"
 
 RF24Client::ConnectState* RF24Client::gState;
-RF24Client::DNSState* RF24Client::dnsState;
 char RF24Client::incomingData[INCOMING_DATA_SIZE];
 uint16_t RF24Client::dataSize = 0;
 struct tcp_pcb* RF24Client::myPcb;
@@ -272,7 +271,7 @@ err_t RF24Client::clientTimeouts(void* arg, struct tcp_pcb* tpcb)
 
     ConnectState* state = (ConnectState*)arg;
 
-    if (state) {
+    if (state != nullptr) {
         if (millis() - state->clientTimer > state->cConnectionTimeout) {
             if (tpcb->state == ESTABLISHED || tpcb->state == SYN_SENT || tpcb->state == SYN_RCVD) {
                 IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("$$$$$$$$$$$$$$ Closed Client PCB TIMEOUT $$$$$$$$$$$"); );
@@ -329,7 +328,6 @@ err_t RF24Client::serverTimeouts(void* arg, struct tcp_pcb* tpcb)
                 #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
                     UNLOCK_TCPIP_CORE();
                 #endif
-                    //RF24Server::restart();
                     return ERR_ABRT;
                 }
             
@@ -410,7 +408,7 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                 #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
                     UNLOCK_TCPIP_CORE();
                 #endif
-                        //RF24Server::restart();
+
                         return ERR_ABRT;
                       }
                   }
@@ -446,7 +444,6 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                 #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
                     UNLOCK_TCPIP_CORE();
                 #endif
-                            RF24Server::restart();
                             return ERR_ABRT;
                         }
                     }
@@ -517,6 +514,8 @@ err_t RF24Client::closeConn(void* arg, struct tcp_pcb* tpcb)
     #endif
     return ERR_OK;
 }
+
+/***************************************************************************************************/
 
 err_t RF24Client::acceptConnection(void* arg, struct tcp_pcb* tpcb, bool setTimeout)
 {
@@ -589,27 +588,27 @@ err_t RF24Client::on_connected(void* arg, struct tcp_pcb* tpcb, err_t err)
     return ERR_OK;
 }
 
-#endif
+#endif // USE_LWIP > 1
 /***************************************************************************************************/
 
-#if USE_LWIP != 1
+#if USE_LWIP < 1
 RF24Client::RF24Client() : data(NULL) {}
 #else
 RF24Client::RF24Client() : data(0)
 {
-    clientConnectionTimeout = 45000;
+    clientConnectionTimeout = 0;
     serverConnectionTimeout = 30000;
 }
 
 #endif
 /*************************************************************/
 
-#if USE_LWIP != 1
+#if USE_LWIP < 1
 RF24Client::RF24Client(uip_userdata_t* conn_data) : data(conn_data) {}
 #else
 RF24Client::RF24Client(uint32_t data) : data(0)
 {
-    clientConnectionTimeout = 45000;
+    clientConnectionTimeout = 0;
     serverConnectionTimeout = 30000;
 }
 #endif
@@ -617,7 +616,7 @@ RF24Client::RF24Client(uint32_t data) : data(0)
 
 uint8_t RF24Client::connected()
 {
-#if USE_LWIP != 1
+#if USE_LWIP < 1
     return (data && (data->packets_in != 0 || (data->state & UIP_CLIENT_CONNECTED))) ? 1 : 0;
 #else
     if (gState != nullptr) {
@@ -632,7 +631,7 @@ uint8_t RF24Client::connected()
 int RF24Client::connect(IPAddress ip, uint16_t port)
 {
 
-#if USE_LWIP != 1
+#if USE_LWIP < 1
     #if UIP_ACTIVE_OPEN > 0
 
     // do{
@@ -819,7 +818,7 @@ int RF24Client::connect(const char* host, uint16_t port)
 
 void RF24Client::stop()
 {
-#if USE_LWIP != 1
+#if USE_LWIP < 1
     if (data && data->state)
     {
 
@@ -901,7 +900,7 @@ void RF24Client::stop()
 // EthernetServer::available() as the condition in an if-statement.
 bool RF24Client::operator==(const RF24Client& rhs)
 {
-#if USE_LWIP != 1
+#if USE_LWIP < 1
     return data && rhs.data && (data == rhs.data);
 #else
     return dataSize > 0 ? true : false;
@@ -913,7 +912,7 @@ bool RF24Client::operator==(const RF24Client& rhs)
 RF24Client::operator bool()
 {
     Ethernet.tick();
-#if USE_LWIP != 1
+#if USE_LWIP < 1
     return data && (!(data->state & UIP_CLIENT_REMOTECLOSED) || data->packets_in != 0);
 #else
     return dataSize > 0 ? true : false;
@@ -935,7 +934,7 @@ size_t RF24Client::write(const uint8_t* buf, size_t size)
 }
 
 /*************************************************************/
-#if USE_LWIP != 1
+#if USE_LWIP < 1
 size_t RF24Client::_write(uip_userdata_t* u, const uint8_t* buf, size_t size)
 #else
 size_t RF24Client::_write(uint8_t* data, const uint8_t* buf, size_t size)
@@ -944,7 +943,7 @@ size_t RF24Client::_write(uint8_t* data, const uint8_t* buf, size_t size)
 
 {
 
-#if USE_LWIP != 1
+#if USE_LWIP < 1
     size_t total_written = 0;
     size_t payloadSize = rf24_min(size, UIP_TCP_MSS);
 
@@ -1045,7 +1044,7 @@ void uip_log(char* msg)
 }
 
 /*************************************************************/
-#if USE_LWIP != 1
+#if USE_LWIP < 1
 void serialip_appcall(void)
 {
     uip_userdata_t* u = (uip_userdata_t*)uip_conn->appstate;
@@ -1224,7 +1223,7 @@ finish:;
 }
 #endif
 /*******************************************************/
-#if USE_LWIP != 1
+#if USE_LWIP < 1
 uip_userdata_t* RF24Client::_allocateData()
 {
     for (uint8_t sock = 0; sock < UIP_CONNS; sock++)
@@ -1271,7 +1270,7 @@ int RF24Client::waitAvailable(uint32_t timeout)
 int RF24Client::available()
 {
     RF24Ethernet.tick();
-#if USE_LWIP != 1
+#if USE_LWIP < 1
     if (*this)
     {
         return _available(data);
@@ -1283,13 +1282,13 @@ int RF24Client::available()
 }
 
 /*************************************************************/
-#if USE_LWIP != 1
+#if USE_LWIP < 1
 int RF24Client::_available(uip_userdata_t* u)
 #else
 int RF24Client::_available(uint8_t* data)
 #endif
 {
-#if USE_LWIP != 1
+#if USE_LWIP < 1
     if (u->packets_in)
     {
         return u->dataCnt;
@@ -1304,7 +1303,7 @@ int RF24Client::_available(uint8_t* data)
 
 int RF24Client::read(uint8_t* buf, size_t size)
 {
-#if USE_LWIP != 1
+#if USE_LWIP < 1
     if (*this)
     {
         if (!data->packets_in)
@@ -1381,7 +1380,7 @@ int RF24Client::peek()
 {
     if (available())
     {
-#if USE_LWIP != 1
+#if USE_LWIP < 1
         return data->myData[data->in_pos];
 #else
         return incomingData[0];
@@ -1394,10 +1393,10 @@ int RF24Client::peek()
 
 void RF24Client::flush()
 {
-#if USE_LWIP != 1
+#if USE_LWIP < 1
     if (*this)
     {
-    #if USE_LWIP != 1
+    #if USE_LWIP < 1
         data->packets_in = 0;
         data->dataCnt = 0;
     #else

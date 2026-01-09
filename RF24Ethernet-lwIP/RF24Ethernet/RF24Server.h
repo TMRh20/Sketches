@@ -30,7 +30,6 @@ public:
     RF24Server();
     RF24Client available();
     void begin();
-    static void restart();
 #if defined(ESP32)
     /* on esp32 this is a pure virtual func */
     void begin(uint16_t port);
@@ -42,7 +41,6 @@ public:
 
 private:
 #if USE_LWIP > 0
-    static bool doOnce;
     static struct tcp_pcb* sPcb;
     static struct tcp_pcb* bindPcb;
     static uint16_t _port;

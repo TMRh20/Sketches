@@ -47,9 +47,6 @@ typedef struct
 
 #elif RF24ETHERNET_USE_UDP
 
-
-
-
     struct UDPState
     {
         volatile bool dataReceived = false;
