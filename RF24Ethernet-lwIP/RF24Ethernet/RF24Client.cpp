@@ -513,6 +513,7 @@ if(tpcb != nullptr){
         tcp_poll(tpcb, closed_port, 6);
         tcp_arg(tpcb, RF24Client::gState[1]); 
         acceptConnection(gState[1], tpcb, false);
+        dataSize[1] = 0;
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
         UNLOCK_TCPIP_CORE();
     #endif
@@ -522,7 +523,7 @@ if(tpcb != nullptr){
     }
     }
     
-    
+    dataSize[0] = 0;
     acceptConnection(gState[0], tpcb, true);
     return ERR_OK;
 }
