@@ -74,8 +74,8 @@ err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, con
 {
 
     if (fstate != nullptr) {
-        fstate->serverTimer = millis();
-        fstate->clientTimer = millis();
+        //fstate->serverTimer = millis();
+        //fstate->clientTimer = millis();
     }
     if(fpcb == nullptr){
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("tx with no fpcb: "); );
@@ -93,9 +93,18 @@ err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, con
         return ERR_CLSD;
     }
     
+
+
+    uint32_t timeout = millis() + serverConnectionTimeout;
+    while (len > tcp_sndbuf(fpcb)) {
+        Ethernet.tick();
+        if (millis() > timeout) {
+            Serial.println("********** tx timeout *******");
+            return ERR_BUF;
+        }
+    }
     
-    fstate->waiting_for_ack = true;
-    
+ 
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     LOCK_TCPIP_CORE();
     #endif
@@ -140,10 +149,11 @@ err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, con
         Ethernet.tick();
     }
 
-    if(fstate != nullptr){
+    return ERR_OK;
+    /*if(fstate != nullptr){
         return fstate->result;
     }
-    return ERR_CLSD;
+    return ERR_CLSD;*/
 }
 
 /***************************************************************************************************/
@@ -226,6 +236,7 @@ err_t RF24Client::srecv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p
 
 err_t RF24Client::recv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p, err_t err)
 {
+    
     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("recv cb"); );
 
     ConnectState* state = (ConnectState*)arg;
@@ -259,6 +270,7 @@ err_t RF24Client::recv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p,
     tcp_recved(tpcb, p->len);
 
     pbuf_free(p);
+        
     return ERR_OK;
 }
 
@@ -361,6 +373,7 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
 
             if ((tpcb->state == ESTABLISHED || tpcb->state == SYN_SENT || tpcb->state == SYN_RCVD)) {
                 if(state->backlogWasAccepted == false && state->backlogWasClosed == false){
+
                     state->backlogWasAccepted = true;
                     state->connectTimestamp = millis();
                     state->connected = true;
@@ -1003,6 +1016,14 @@ test2:
     if( gState[0] == nullptr){
         return ERR_CLSD;
     }
+    
+    /*uint32_t timeout = millis() + 5000;
+    while(gState[0]->waiting_for_ack == true || gState[0]->finished == false){
+        Ethernet.update();
+        if(millis() > timeout){
+            return ERR_BUF;
+        }
+    }*/
   
     
     char buffer[size];
@@ -1021,7 +1042,7 @@ test2:
         if (myPcb == nullptr || myPcb->state != ESTABLISHED) {
             return ERR_CLSD;
         }
-
+        gState[0]->waiting_for_ack = true;
         err_t write_err = blocking_write(myPcb, gState[0], buffer, MAX_PAYLOAD_SIZE - 14);
         position += MAX_PAYLOAD_SIZE - 14;
         size -= MAX_PAYLOAD_SIZE - 14;
@@ -1037,8 +1058,10 @@ test2:
         return ERR_CLSD;
     }
 
+    gState[0]->waiting_for_ack = true;
     err_t write_err = blocking_write(myPcb, gState[0], buffer, size);
-
+    
+    
     if (write_err == ERR_OK) {
         return (size);
     }
