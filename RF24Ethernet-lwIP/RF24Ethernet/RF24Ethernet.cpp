@@ -476,6 +476,10 @@ void RF24EthernetClass::tick()
 #ifndef USE_LWIP
     uint8_t result = RF24Ethernet.mesh.update();
 
+   if(Ethernet.mesh.mesh_address == 0){
+       Ethernet.mesh.DHCP();
+   }
+   
     if (result == EXTERNAL_DATA_TYPE) {
         if (RF24Ethernet.network.frag_ptr->message_size <= UIP_BUFSIZE && RF24Ethernet.network.frag_ptr->message_size >= 20) {
             uip_len = RF24Ethernet.network.frag_ptr->message_size;
@@ -566,6 +570,10 @@ void RF24EthernetClass::tick()
 #else // Using LWIP
 
     uint8_t result = RF24Ethernet.mesh.update();
+    if(Ethernet.mesh.mesh_address == 0){
+       Ethernet.mesh.DHCP();
+    }
+   
     if (result == EXTERNAL_DATA_TYPE) {
 
         if (RF24Ethernet.network.frag_ptr->message_size > 0) {
