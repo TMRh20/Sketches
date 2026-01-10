@@ -32,6 +32,7 @@ RF24Server::RF24Server(uint16_t port) : _port(htons(port))
 #else
 uint16_t RF24Server::_port;
 struct tcp_pcb* RF24Server::sPcb;
+EthernetClient::ConnectState* RF24Server::serverState;
 
 RF24Server::RF24Server(uint16_t port)
 {
@@ -92,6 +93,10 @@ void RF24Server::begin()
         IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("unable to bind to port"););
     }
 
+    if(serverState == nullptr){
+        serverState = new RF24Client::ConnectState;
+    }
+      
     if (RF24Client::gState[0] == nullptr) {
         RF24Client::gState[0] = new RF24Client::ConnectState;
     }
@@ -100,16 +105,16 @@ void RF24Server::begin()
         RF24Client::gState[1] = new RF24Client::ConnectState;
     }
     
-    if(RF24Client::gState[0] != nullptr){
-        RF24Client::gState[0]->finished = false;
-        RF24Client::gState[0]->connected = false;
-        RF24Client::gState[0]->result = 0;
-        RF24Client::gState[0]->waiting_for_ack = false;
+    if(serverState != nullptr){
+        serverState->finished = false;
+        serverState->connected = false;
+        serverState->result = 0;
+        serverState->waiting_for_ack = false;
     }
     sPcb = tcp_listen_with_backlog(sPcb, 1);
   
     if(sPcb != nullptr){
-      tcp_arg(sPcb, RF24Client::gState[0]);
+      tcp_arg(sPcb, serverState);
       tcp_accept(sPcb, RF24Client::accept);
     }else{
         Serial.println("Server failed to initialize");

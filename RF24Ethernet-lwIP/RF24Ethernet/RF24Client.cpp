@@ -206,6 +206,9 @@ err_t RF24Client::srecv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p
     }
 
     const uint8_t* data = static_cast<const uint8_t*>(p->payload);
+    Serial.print("State ID: "); Serial.print(state->identifier);
+    Serial.print(" Gstate 0: "); Serial.print(gState[0]->identifier);
+    Serial.print(" Gstate 1: "); Serial.println(gState[1]->identifier);
     
     if(state->identifier == gState[0]->identifier){ 
         if (dataSize[0] + p->len < INCOMING_DATA_SIZE) { Serial.println("Data to buffer 0");
@@ -384,8 +387,8 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                     memcpy(incomingData[0], incomingData[1], dataSize[1]);
                     dataSize[0] = dataSize[1];
                     dataSize[1] = 0;
-                    gState[0] = state;
-                    gState[1] = nullptr;
+                    gState[0]->connected = true;
+                    gState[0]->finished = false;
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
                     UNLOCK_TCPIP_CORE();
     #endif
@@ -407,6 +410,7 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                     if(tcp_close(tpcb) == ERR_OK){
                         state->backlogWasClosed = true;
                         state->closeTimer = millis();
+                        state->finished = true;
                     }
                     if(state->backlogWasAccepted == false){
                       IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("------with backlog accepted--------"); );
@@ -426,7 +430,7 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                       if(millis() - state->closeTimer > 5000){
                           tcp_abort(tpcb);
                           if(state->identifier == gState[0]->identifier){
-                            myPcb = nullptr;
+                            //myPcb = nullptr;
                           }
                 #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
                     UNLOCK_TCPIP_CORE();
@@ -447,6 +451,7 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                 if(tcp_close(tpcb) == ERR_OK){
                     state->backlogWasClosed = true;
                     state->closeTimer = millis();
+                    state->finished = true;
                 }
                 if(state->backlogWasAccepted == false){
                     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("------with backlog accepted--------"); );
@@ -462,7 +467,7 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                         if(millis() - state->closeTimer > 5000){
                             tcp_abort(tpcb);
                             if(state->identifier == gState[0]->identifier){
-                              myPcb = nullptr;
+                              //myPcb = nullptr;
                             }
                 #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
                     UNLOCK_TCPIP_CORE();
@@ -498,33 +503,44 @@ if(tpcb != nullptr){
     #endif
 }
  
-    if (myPcb != nullptr) {
+    if (gState[0]->connected == true) {
 		
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("got ACC with already conn: "); Serial.println(accepts); );
-    if(tpcb != nullptr){
+      if(tpcb != nullptr){
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
         UNLOCK_TCPIP_CORE();
     #endif
-        if(gState[1] == nullptr){
-            gState[1] = new ConnectState;
-        }
+        //if(gState[1] == nullptr){
+        //    gState[1] = new ConnectState;
+        //}
+        //gState[1] = state;
+        simpleCounter+=1;
+        gState[1]->identifier = simpleCounter;        
         accepts++;
+        Serial.println("pass arg Gstate 1");
+        tcp_arg(tpcb, RF24Client::gState[1]); 
         tcp_backlog_delayed(tpcb);
         tcp_poll(tpcb, closed_port, 6);
-        tcp_arg(tpcb, RF24Client::gState[1]); 
         acceptConnection(gState[1], tpcb, false);
+        Serial.print(" Connect gState 1 ID: ");
+        Serial.println(gState[1]->identifier);
         dataSize[1] = 0;
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
         UNLOCK_TCPIP_CORE();
     #endif
         return ERR_OK;
-    }else{
+      }else{
         return ERR_CLSD;  
-    }
+      }
     }
     
+    //gState[0] = state;
     dataSize[0] = 0;
+    simpleCounter+=1;
+    gState[0]->identifier = simpleCounter;
     acceptConnection(gState[0], tpcb, true);
+    Serial.print(" Connect gState 0 ID: ");
+    Serial.println(gState[0]->identifier);
     return ERR_OK;
 }
 
@@ -557,6 +573,7 @@ err_t RF24Client::acceptConnection(void* arg, struct tcp_pcb* tpcb, bool setTime
 
     if (setTimeout) {
         myPcb = tpcb;
+        Serial.println("pass arg Gstate 0");
         tcp_arg(tpcb, RF24Client::gState[0]); 
     }
 
@@ -571,8 +588,9 @@ err_t RF24Client::acceptConnection(void* arg, struct tcp_pcb* tpcb, bool setTime
       UNLOCK_TCPIP_CORE();
       #endif
       IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("############Set State ########  "); Serial.println(simpleCounter); );
-      state->identifier = simpleCounter;
-      simpleCounter++;
+      //simpleCounter++;
+      //state->identifier = simpleCounter;
+
       state->result = ERR_OK;
       state->finished = false;
       state->connected = true;
@@ -608,12 +626,12 @@ err_t RF24Client::on_connected(void* arg, struct tcp_pcb* tpcb, err_t err)
     #endif
         }*/
 
-        state->cConnectionTimeout = clientConnectionTimeout;
-        state->clientTimer = millis();
-        state->result = err;
-        state->finished = true;
-        state->connected = true;
-        state->waiting_for_ack = false;
+        //state->cConnectionTimeout = clientConnectionTimeout;
+        //state->clientTimer = millis();
+        //state->result = err;
+        //state->finished = true;
+        //state->connected = true;
+        //state->waiting_for_ack = false;
     }
     return ERR_OK;
 }
@@ -884,9 +902,8 @@ void RF24Client::stop()
 
             if (myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD) {
                 if(gState[0] != nullptr){
-                  if(gState[0]->connected == true){
                     gState[0]->connected = false;
-                  }
+                    gState[0]->finished = true;
                 }
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
                 LOCK_TCPIP_CORE();

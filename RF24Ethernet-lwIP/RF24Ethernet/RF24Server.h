@@ -44,7 +44,7 @@ private:
     static struct tcp_pcb* sPcb;
     static struct tcp_pcb* bindPcb;
     static uint16_t _port;
-
+    static EthernetClient::ConnectState* serverState;
 #else
     uint16_t _port;
 #endif
