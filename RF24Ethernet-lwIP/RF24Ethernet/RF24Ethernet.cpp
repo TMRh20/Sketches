@@ -23,6 +23,8 @@
 #if USE_LWIP > 0
 RF24EthernetClass::EthQueue RF24EthernetClass::RXQueue __attribute__((aligned(4)));
 netif RF24EthernetClass::myNetif;
+bool RF24EthernetClass::useCoreLocking;
+bool RF24EthernetClass::locked;
 
 void RF24EthernetClass::initRXQueue(EthQueue* RXQueue)
 {
@@ -183,6 +185,7 @@ RF24EthernetClass::RF24EthernetClass(RF24& _radio, RF24Network& _network) : radi
     #else // Using RF24Mesh
 RF24EthernetClass::RF24EthernetClass(RF24& _radio, RF24Network& _network, RF24Mesh& _mesh) : radio(_radio), network(_network), mesh(_mesh) // fn_uip_cb(NULL)
 {
+
 }
     #endif
 
@@ -195,6 +198,7 @@ RF24EthernetClass::RF24EthernetClass(nrf_to_nrf& _radio, RF52Network& _network) 
     #else // Using RF24Mesh
 RF24EthernetClass::RF24EthernetClass(nrf_to_nrf& _radio, RF52Network& _network, RF52Mesh& _mesh) : radio(_radio), network(_network), mesh(_mesh) // fn_uip_cb(NULL)
 {
+    
 }
     #endif
 #endif
@@ -310,6 +314,16 @@ void RF24EthernetClass::configure(IPAddress ip, IPAddress dns, IPAddress gateway
     #endif
 #else
 
+        #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+            wifi_mode_t mode;
+            esp_err_t err = esp_wifi_get_mode(&mode);
+            if (err == ESP_OK) {
+                useCoreLocking = true;
+            }else{
+                useCoreLocking = false;
+            }
+        #endif
+        
     ip4_addr_t myIp, myMask, myGateway;
     IP4_ADDR(&myIp, ip[0], ip[1], ip[2], ip[3]);
     IP4_ADDR(&myMask, subnet[0], subnet[1], subnet[2], subnet[3]);
@@ -318,13 +332,13 @@ void RF24EthernetClass::configure(IPAddress ip, IPAddress dns, IPAddress gateway
     
     void* context = nullptr;
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    LOCK_TCPIP_CORE();
+    if(useCoreLocking){ LOCK_TCPIP_CORE(); }
     #endif
     netif_add(&Ethernet.myNetif, &myIp, &myMask, &myGateway, context, netif_init, ip_input);
     netif_set_default(&Ethernet.myNetif);
     netif_set_up(&Ethernet.myNetif);
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    UNLOCK_TCPIP_CORE();
+    if(useCoreLocking){ UNLOCK_TCPIP_CORE(); }
     #endif
 
 #endif
@@ -341,7 +355,13 @@ void RF24EthernetClass::set_gateway(IPAddress gwIP)
 #else
     ip4_addr_t new_gw;
     IP4_ADDR(&new_gw, gwIP[0], gwIP[1], gwIP[2], gwIP[3]);
+    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+    if(useCoreLocking){ LOCK_TCPIP_CORE(); }
+    #endif
     netif_set_gw(&Ethernet.myNetif, &new_gw);
+    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+    if(useCoreLocking){ UNLOCK_TCPIP_CORE(); }
+    #endif
 #endif
 }
 
@@ -353,8 +373,9 @@ void RF24EthernetClass::listen(uint16_t port)
     uip_listen(HTONS(port));
 #else
 
+Serial.println("locked");
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    LOCK_TCPIP_CORE();
+    if(useCoreLocking){ LOCK_TCPIP_CORE(); } 
     #endif
     RF24Client::myPcb = tcp_new();
     RF24Client::serverActive = true;
@@ -375,8 +396,9 @@ void RF24EthernetClass::listen(uint16_t port)
 
     tcp_arg(RF24Client::myPcb, &RF24Client::gState[0]);
     tcp_accept(RF24Client::myPcb, RF24Client::accept);
+    Serial.println("un-locked");
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    UNLOCK_TCPIP_CORE();
+    if(useCoreLocking){ UNLOCK_TCPIP_CORE(); }
     #endif
 #endif
 }
@@ -582,25 +604,35 @@ void RF24EthernetClass::tick()
             IF_ETH_DEBUG_L1( Serial.println("Net in"); );
         }
     }
-
+    //Serial.println("locked .01");
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    LOCK_TCPIP_CORE();
+         if(useCoreLocking){ locked = true; LOCK_TCPIP_CORE(); } 
     #endif
     sys_check_timeouts();
-
+    //Serial.println("unlocked .01");
+    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+         if(useCoreLocking){ UNLOCK_TCPIP_CORE(); locked = false; } 
+    #endif
+    
     pbuf* p = readRXQueue(&RXQueue);
     if (p != nullptr)
     {
+        //Serial.println("locked .1");
+         #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+         if(useCoreLocking){ locked = true; LOCK_TCPIP_CORE(); } 
+        #endif
         if (myNetif.input(p, &myNetif) != ERR_OK)
         {
             LWIP_DEBUGF(NETIF_DEBUG, ("IP input error\r\n"));
             pbuf_free(p);
             p = NULL;
         }
+        //Serial.println("un-locked .1");
+        #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+        if(useCoreLocking){ UNLOCK_TCPIP_CORE(); locked = false; }
+        #endif
     }
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    UNLOCK_TCPIP_CORE();
-    #endif
+    
 
 #endif
 }

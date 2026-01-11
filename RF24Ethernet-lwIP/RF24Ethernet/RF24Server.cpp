@@ -69,9 +69,9 @@ void RF24Server::begin()
 #if USE_LWIP < 1
     uip_listen(_port);
 #else
-
+Serial.println("s Lock");
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    LOCK_TCPIP_CORE();
+    if(Ethernet.useCoreLocking){ LOCK_TCPIP_CORE(); }
     #endif
 
     bool closed = false;
@@ -119,8 +119,9 @@ void RF24Server::begin()
     }else{
         Serial.println("Server failed to initialize");
     }
+    Serial.println("s un-Lock");
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    UNLOCK_TCPIP_CORE();
+    if(Ethernet.useCoreLocking){ UNLOCK_TCPIP_CORE(); }
     #endif
 
 #endif

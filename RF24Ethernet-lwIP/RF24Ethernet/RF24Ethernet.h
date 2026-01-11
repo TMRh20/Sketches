@@ -49,7 +49,11 @@ extern "C" {
 #else
 
     #if defined ARDUINO_ARCH_ESP32
-        #define RF24ETHERNET_CORE_REQUIRES_LOCKING
+      #if defined CONFIG_LWIP_TCPIP_CORE_LOCKING
+         #define RF24ETHERNET_CORE_REQUIRES_LOCKING
+         #include <WiFi.h>
+         #include "esp_wifi.h"
+      #endif
     #endif
 
     #include "ethernet_comp.h"
@@ -249,6 +253,7 @@ public:
 
 #if USE_LWIP > 0
 
+    static bool useCoreLocking;
     static constexpr unsigned MAX_FRAME_SIZE = MAX_PAYLOAD_SIZE-14; // packet size excluding FCS
     static constexpr unsigned MIN_FRAME_SIZE = 60;
     static constexpr unsigned MAX_RX_QUEUE = 5;
@@ -271,11 +276,12 @@ public:
     /** Used internally to write to the internall data queue */
     static void writeRXQueue(EthQueue* RXQueue, const uint8_t* ethFrame, uint16_t lenEthFrame);
 
-
+    
 private:
     static constexpr uint16_t ETHERNET_MTU = 1500;
     static constexpr uint8_t MacAddr[6] = {0, 1, 2, 3, 4};
     static bool isConnected;
+    static bool locked;
     
     static pbuf* readRXQueue(EthQueue* RXQueue);
 
