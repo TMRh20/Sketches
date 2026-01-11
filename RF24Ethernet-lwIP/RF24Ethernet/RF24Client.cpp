@@ -411,6 +411,8 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                         state->backlogWasClosed = true;
                         state->closeTimer = millis();
                         state->finished = true;
+                        dataSize[0] = 0;
+                        gState[0]->connected = false;                        
                     }
                     if(state->backlogWasAccepted == false){
                       IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("------with backlog accepted--------"); );
@@ -452,6 +454,8 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                     state->backlogWasClosed = true;
                     state->closeTimer = millis();
                     state->finished = true;
+                    dataSize[0] = 0;
+                    gState[0]->connected = false;    
                 }
                 if(state->backlogWasAccepted == false){
                     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("------with backlog accepted--------"); );
@@ -626,12 +630,12 @@ err_t RF24Client::on_connected(void* arg, struct tcp_pcb* tpcb, err_t err)
     #endif
         }*/
 
-        //state->cConnectionTimeout = clientConnectionTimeout;
-        //state->clientTimer = millis();
-        //state->result = err;
-        //state->finished = true;
-        //state->connected = true;
-        //state->waiting_for_ack = false;
+        state->cConnectionTimeout = clientConnectionTimeout;
+        state->clientTimer = millis();
+        state->result = err;
+        state->finished = true;
+        state->connected = true;
+        state->waiting_for_ack = false;
     }
     return ERR_OK;
 }
