@@ -92,7 +92,7 @@ err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, con
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("tx with no connection "); );
         return ERR_CLSD;
     }
-    
+
 
 
     uint32_t timeout = millis() + serverConnectionTimeout;
@@ -411,15 +411,24 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                         state->backlogWasClosed = true;
                         state->closeTimer = millis();
                         state->finished = true;
-                        dataSize[0] = 0;
-                        gState[0]->connected = false;                        
+                        
                     }
+                    
                     if(state->backlogWasAccepted == false){
                       IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("------with backlog accepted--------"); );
                       tcp_backlog_accepted(tpcb);
                       state->backlogWasAccepted = true;
                       accepts--;
+                        dataSize[1] = 0;
+                        gState[1]->connected = false;
+                        gState[1]->finished = true;
+                    }else{
+                        dataSize[0] = 0;
+                        gState[0]->connected = false;
+                        gState[0]->finished = true;
                     }
+                    
+                    
                 #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
                     UNLOCK_TCPIP_CORE();
                 #endif
@@ -454,15 +463,20 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                     state->backlogWasClosed = true;
                     state->closeTimer = millis();
                     state->finished = true;
-                    dataSize[0] = 0;
-                    gState[0]->connected = false;    
                 }
                 if(state->backlogWasAccepted == false){
                     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("------with backlog accepted--------"); );
                     tcp_backlog_accepted(tpcb);
                     state->backlogWasAccepted = true;
                     accepts--;
-                }
+                        dataSize[1] = 0;
+                        gState[1]->connected = false;
+                        gState[1]->finished = true;
+                }else{
+                        dataSize[0] = 0;
+                        gState[0]->connected = false;
+                        gState[0]->finished = true;
+                    }
             }else{
                     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("Killing off TPCB that was already closed 2 "); );
                     if(state != nullptr){                  
@@ -507,7 +521,7 @@ if(tpcb != nullptr){
     #endif
 }
  
-    if (gState[0]->connected == true) {
+    if (myPcb != nullptr) {
 		
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("got ACC with already conn: "); Serial.println(accepts); );
       if(tpcb != nullptr){
@@ -811,10 +825,13 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
 }
 
 /*************************************************************/
+
+#if USE_LWIP > 1
 void dnsCallback(const char *name, const ip_addr_t *ipaddr, void *callback_arg) {
     
 }
-
+#endif
+/*************************************************************/
 
 int RF24Client::connect(const char* host, uint16_t port)
 {
@@ -1066,6 +1083,10 @@ test2:
         }
         gState[0]->waiting_for_ack = true;
         err_t write_err = blocking_write(myPcb, gState[0], buffer, MAX_PAYLOAD_SIZE - 14);
+        
+        if (write_err != ERR_OK) {
+            return (write_err);
+        }        
         position += MAX_PAYLOAD_SIZE - 14;
         size -= MAX_PAYLOAD_SIZE - 14;
         Ethernet.tick();

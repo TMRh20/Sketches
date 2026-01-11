@@ -481,7 +481,7 @@ void RF24EthernetClass::tick()
    }
    
     if (result == EXTERNAL_DATA_TYPE) {
-        if (RF24Ethernet.network.frag_ptr->message_size <= UIP_BUFSIZE && RF24Ethernet.network.frag_ptr->message_size >= 20) {
+        if (RF24Ethernet.network.frag_ptr->message_size <= UIP_BUFSIZE && RF24Ethernet.network.frag_ptr->message_size >= 28) {
             uip_len = RF24Ethernet.network.frag_ptr->message_size;
         }
     }
@@ -614,19 +614,26 @@ void RF24EthernetClass::network_send()
     IPAddress gwIP = Ethernet.gatewayIP();
     int16_t nodeAddress = 0;
 
+    //If not the master node
     if (Ethernet.mesh.mesh_address != 0) {
-        if (gwIP[3] != buf[19]) {
-            //Request an address lookup from the Master node
-            nodeAddress = Ethernet.mesh.getAddress((char)buf[19]);
-            if (nodeAddress < 0) {
-                nodeAddress = 0;
-            }
+        if (gwIP[3] != uip_buf[19]) {                                       // If not sending to the gateway
+            IPAddress local_ip = Ethernet.localIP();
+            if(local_ip[0] == uip_buf[16] && local_ip[1] == uip_buf[17]){       // If we are local within the nRF24 network
+                //Request an address lookup from the Master node
+                nodeAddress = Ethernet.mesh.getAddress((char)uip_buf[19]);  // Do an address lookup
+                if (nodeAddress < 0) {
+                    nodeAddress = 0;                                    // If the result is negative, send to master
+                }
+            }                                                           // If this address is outside the nRF24 network, it will be send to master (00)
         }
     }
     else {
-        nodeAddress = Ethernet.mesh.getAddress((char)buf[19]);
-        if (nodeAddress < 0) {
-            return -1;
+        IPAddress local_ip = Ethernet.localIP();
+        if(local_ip[0] == uip_buf[16] && local_ip[1] == uip_buf[17]){          // If within the nRF24 radio network, do a lookup, else send to self (00)
+            nodeAddress = Ethernet.mesh.getAddress((char)uip_buf[19]);
+            if (nodeAddress < 0) {
+                return;
+            }
         }
     }
     RF24NetworkHeader headerOut(nodeAddress, EXTERNAL_DATA_TYPE);
