@@ -393,13 +393,8 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                     accepts--;
                     myPcb = tpcb;
                     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("----------ACCEPT delayed PCB 2--------- "); Serial.println(state->identifier); );
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-   if(Ethernet.useCoreLocking && !Ethernet.locked){  Serial.println("locked 6.0"); LOCK_TCPIP_CORE(); }
-    #endif
+
                     tcp_backlog_accepted(tpcb);
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-                    if(Ethernet.useCoreLocking && !Ethernet.locked){Serial.println("un-locked"); UNLOCK_TCPIP_CORE(); }
-    #endif 
                     memcpy(incomingData[0], incomingData[1], dataSize[1]);
                     dataSize[0] = dataSize[1];
                     dataSize[1] = 0;
@@ -419,9 +414,6 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                   if(state->backlogWasClosed == false){
                       
                     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("----------close off delayed PCB 1--------- "); Serial.println(state->identifier); );
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-   if(Ethernet.useCoreLocking && !Ethernet.locked){  Serial.println("locked 6.1"); LOCK_TCPIP_CORE(); }
-    #endif                    
                     if(tcp_close(tpcb) == ERR_OK){
                         state->backlogWasClosed = true;
                         state->closeTimer = millis();
@@ -442,11 +434,6 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                         gState[0]->connected = false;
                         gState[0]->finished = true;
                     }
-                    
-                  
-                #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-                    if(Ethernet.useCoreLocking && !Ethernet.locked){ Serial.println("un-locked");   UNLOCK_TCPIP_CORE(); }
-                #endif
                     return ERR_OK;
                   }else{
                       IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("Killing off TPCB that was already closed 1 "); );
@@ -454,19 +441,11 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                       if(state != nullptr){                    
                         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println(state->identifier); );
                       }
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-   if(Ethernet.useCoreLocking && !Ethernet.locked){  Serial.println("locked 6.2"); LOCK_TCPIP_CORE(); }
-    #endif                      
                       if(millis() - state->closeTimer > 5000){
                           tcp_abort(tpcb);
                           if(state->identifier == gState[0]->identifier){
                             //myPcb = nullptr;
                           }
-                
-                #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-                    if(Ethernet.useCoreLocking && !Ethernet.locked){ Serial.println("un-locked"); UNLOCK_TCPIP_CORE(); }
-                #endif
-
                         return ERR_ABRT;
                       }
                   }
@@ -479,9 +458,6 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
         if (millis() - state->connectTimestamp > state->sConnectionTimeout) {
             if(state->backlogWasClosed == false){
                 IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("----------close off delayed PCB 2--------- "); Serial.println(state->identifier); );               
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-   if(Ethernet.useCoreLocking && !Ethernet.locked){  Serial.println("locked 6"); LOCK_TCPIP_CORE(); }
-    #endif
                 if(tcp_close(tpcb) == ERR_OK){
                     state->backlogWasClosed = true;
                     state->closeTimer = millis();
@@ -500,26 +476,16 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                         gState[0]->connected = false;
                         gState[0]->finished = true;
                     }
-                #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-                    if(Ethernet.useCoreLocking && !Ethernet.locked){ Serial.println("un-locked"); UNLOCK_TCPIP_CORE(); }
-                #endif
                     return ERR_OK;
             }else{
                     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("Killing off TPCB that was already closed 2 "); );
                     if(state != nullptr){                  
                         Serial.println(state->identifier);
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-   if(Ethernet.useCoreLocking && !Ethernet.locked){  Serial.println("locked 6"); LOCK_TCPIP_CORE(); }
-    #endif                    
                         if(millis() - state->closeTimer > 5000){
                             tcp_abort(tpcb);
                             if(state->identifier == gState[0]->identifier){
                               //myPcb = nullptr;
                             }
-                
-                #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-                    if(Ethernet.useCoreLocking && !Ethernet.locked){ Serial.println("un-locked"); UNLOCK_TCPIP_CORE(); }
-                #endif
                             return ERR_ABRT;
                         }
                     }
@@ -528,10 +494,6 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
        }
     }
      
-    //#if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    //if(Ethernet.useCoreLocking && !Ethernet.locked){ Serial.println("un-locked"); UNLOCK_TCPIP_CORE(); }
-    //#endif
-
     return ERR_OK;
 }
 

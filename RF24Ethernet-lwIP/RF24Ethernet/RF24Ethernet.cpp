@@ -606,12 +606,12 @@ void RF24EthernetClass::tick()
     }
     //Serial.println("locked .01");
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-         if(useCoreLocking){ locked = true; LOCK_TCPIP_CORE(); } 
+         if(useCoreLocking ){ locked = true; LOCK_TCPIP_CORE(); } 
     #endif
     sys_check_timeouts();
     //Serial.println("unlocked .01");
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-         if(useCoreLocking){ UNLOCK_TCPIP_CORE(); locked = false; } 
+         if(useCoreLocking ){ UNLOCK_TCPIP_CORE(); locked = false; } 
     #endif
     
     pbuf* p = readRXQueue(&RXQueue);
