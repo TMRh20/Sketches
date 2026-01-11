@@ -24,7 +24,6 @@
 RF24EthernetClass::EthQueue RF24EthernetClass::RXQueue __attribute__((aligned(4)));
 netif RF24EthernetClass::myNetif;
 bool RF24EthernetClass::useCoreLocking;
-bool RF24EthernetClass::locked;
 
 void RF24EthernetClass::initRXQueue(EthQueue* RXQueue)
 {
@@ -373,7 +372,6 @@ void RF24EthernetClass::listen(uint16_t port)
     uip_listen(HTONS(port));
 #else
 
-Serial.println("locked");
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     if(useCoreLocking){ LOCK_TCPIP_CORE(); } 
     #endif
@@ -396,7 +394,7 @@ Serial.println("locked");
 
     tcp_arg(RF24Client::myPcb, &RF24Client::gState[0]);
     tcp_accept(RF24Client::myPcb, RF24Client::accept);
-    Serial.println("un-locked");
+
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     if(useCoreLocking){ UNLOCK_TCPIP_CORE(); }
     #endif
@@ -604,22 +602,22 @@ void RF24EthernetClass::tick()
             IF_ETH_DEBUG_L1( Serial.println("Net in"); );
         }
     }
-    //Serial.println("locked .01");
+
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-         if(useCoreLocking ){ locked = true; LOCK_TCPIP_CORE(); } 
+         if(useCoreLocking ){ LOCK_TCPIP_CORE(); } 
     #endif
     sys_check_timeouts();
-    //Serial.println("unlocked .01");
+
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-         if(useCoreLocking ){ UNLOCK_TCPIP_CORE(); locked = false; } 
+         if(useCoreLocking ){ UNLOCK_TCPIP_CORE();  } 
     #endif
     
     pbuf* p = readRXQueue(&RXQueue);
     if (p != nullptr)
     {
-        //Serial.println("locked .1");
+
          #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-         if(useCoreLocking){ locked = true; LOCK_TCPIP_CORE(); } 
+         if(useCoreLocking){ LOCK_TCPIP_CORE(); } 
         #endif
         if (myNetif.input(p, &myNetif) != ERR_OK)
         {
@@ -627,9 +625,9 @@ void RF24EthernetClass::tick()
             pbuf_free(p);
             p = NULL;
         }
-        //Serial.println("un-locked .1");
+
         #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-        if(useCoreLocking){ UNLOCK_TCPIP_CORE(); locked = false; }
+        if(useCoreLocking){ UNLOCK_TCPIP_CORE();}
         #endif
     }
     

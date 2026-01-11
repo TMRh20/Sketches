@@ -281,7 +281,6 @@ private:
     static constexpr uint16_t ETHERNET_MTU = 1500;
     static constexpr uint8_t MacAddr[6] = {0, 1, 2, 3, 4};
     static bool isConnected;
-    static bool locked;
     
     static pbuf* readRXQueue(EthQueue* RXQueue);
 
