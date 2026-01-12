@@ -73,9 +73,9 @@ err_t RF24Client::sent_callback(void* arg, struct tcp_pcb* tpcb, u16_t len)
 err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, const char* data, size_t len)
 {
 
-    if (fstate != nullptr) {
-        //fstate->serverTimer = millis();
-        //fstate->clientTimer = millis();
+    if (fstate->identifier != gState[0]->identifier) {
+        IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("tx to wrong ID "); );
+        return ERR_CLSD;
     }
     if(fpcb == nullptr){
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("tx with no fpcb: "); );
@@ -482,7 +482,7 @@ if(tpcb != nullptr){
     #endif
 }
  
-    if (myPcb != nullptr) {
+    if (myPcb != nullptr || gState[0]->connected == true) {
 		
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("got ACC with already conn: "); Serial.println(accepts); );
       if(tpcb != nullptr){
@@ -658,7 +658,7 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
 
         while ((conn->tcpstateflags & UIP_TS_MASK) != UIP_CLOSED)
         {
-            RF24EthernetClass::update();
+            Ethernet.update();
 
             if ((conn->tcpstateflags & UIP_TS_MASK) == UIP_ESTABLISHED)
             {
@@ -973,7 +973,7 @@ size_t RF24Client::_write(uint8_t* data, const uint8_t* buf, size_t size)
 
 test2:
 
-    RF24EthernetClass::update();
+    Ethernet.update();
     if (u && !(u->state & (UIP_CLIENT_CLOSE | UIP_CLIENT_REMOTECLOSED)) && u->state & (UIP_CLIENT_CONNECTED))
     {
 
