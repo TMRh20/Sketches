@@ -42,7 +42,7 @@ struct tcp_pcb* RF24Client::myPcb;
 bool RF24Client::serverActive;
 uint32_t RF24Client::clientConnectionTimeout;
 uint32_t RF24Client::serverConnectionTimeout;
-uint8_t RF24Client::simpleCounter;
+uint32_t RF24Client::simpleCounter;
 
 /***************************************************************************************************/
 
