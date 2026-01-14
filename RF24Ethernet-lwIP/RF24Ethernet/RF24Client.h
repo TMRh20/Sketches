@@ -195,8 +195,8 @@ protected:
         
         volatile bool backlogWasAccepted = false;
         volatile bool delayState = false;
-        volatile uint8_t identifier = 0;
         volatile bool clientPollingSetup = 0;
+        volatile err_t result = 0;
         
         volatile uint32_t connectTimestamp = millis();
         volatile uint32_t sConnectionTimeout = serverConnectionTimeout;
@@ -204,7 +204,8 @@ protected:
         volatile uint32_t cConnectionTimeout = clientConnectionTimeout;
         volatile uint32_t clientTimer = millis();
         volatile uint32_t closeTimer = millis();
-        volatile err_t result = 0;
+        volatile uint32_t identifier = 0;
+        
     };
 
     /** Connection states */

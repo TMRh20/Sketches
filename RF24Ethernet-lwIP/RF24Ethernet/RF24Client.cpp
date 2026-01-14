@@ -350,7 +350,7 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
 
     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("CP Cb"); );
 
-    if (myPcb == nullptr) {
+    if (myPcb == nullptr && gState[0]->connected == false) {
         if (state != nullptr && tpcb != nullptr) {
 
             if ((tpcb->state == ESTABLISHED || tpcb->state == SYN_SENT || tpcb->state == SYN_RCVD)) {
@@ -369,6 +369,8 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                     dataSize[1] = 0;
                     gState[0]->connected = true;
                     gState[0]->finished = false;
+                    tcp_poll(tpcb, serverTimeouts, 15);
+                    state->serverTimer = millis();
                     return ERR_OK;
                 }
             }
@@ -395,6 +397,10 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                       tcp_backlog_accepted(tpcb);
                       state->backlogWasAccepted = true;
                       accepts--;
+                        
+                    }
+                    
+                    if(state->identifier == gState[1]->identifier){
                         dataSize[1] = 0;
                         gState[1]->connected = false;
                         gState[1]->finished = true;
@@ -437,14 +443,17 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
                     tcp_backlog_accepted(tpcb);
                     state->backlogWasAccepted = true;
                     accepts--;
-                        dataSize[1] = 0;
-                        gState[1]->connected = false;
-                        gState[1]->finished = true;
+                        
+                }
+                if(state->identifier == gState[1]->identifier){
+                    dataSize[1] = 0;
+                    gState[1]->connected = false;
+                    gState[1]->finished = true;
                 }else{
-                        dataSize[0] = 0;
-                        gState[0]->connected = false;
-                        gState[0]->finished = true;
-                    }
+                    dataSize[0] = 0;
+                    gState[0]->connected = false;
+                    gState[0]->finished = true; 
+                }
                     return ERR_OK;
             }else{
                     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("Killing off TPCB that was already closed 2 "); );
