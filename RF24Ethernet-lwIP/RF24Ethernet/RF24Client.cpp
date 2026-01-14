@@ -320,6 +320,9 @@ err_t RF24Client::serverTimeouts(void* arg, struct tcp_pcb* tpcb)
                 tcp_close(tpcb);
                 state->closeTimer = millis();
                 state->backlogWasClosed = true;
+                dataSize[0] = 0;
+                gState[0]->connected = false;
+                gState[0]->finished = true; 
                 if(state->backlogWasAccepted == false ){
                     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("------with backlog accepted--------"); );
                     tcp_backlog_accepted(tpcb);

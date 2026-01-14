@@ -269,7 +269,7 @@ private:
     
     static char incomingData[2][INCOMING_DATA_SIZE];
     static bool serverActive;
-    static uint8_t simpleCounter;
+    static uint32_t simpleCounter;
     
 #endif
 
