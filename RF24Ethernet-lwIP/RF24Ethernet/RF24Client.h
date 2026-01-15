@@ -258,7 +258,6 @@ private:
     static err_t closeConn(void* arg, struct tcp_pcb* tpcb);
     static err_t serverTimeouts(void* arg, struct tcp_pcb* tpcb);
     static err_t clientTimeouts(void* arg, struct tcp_pcb* tpcb);
-    static err_t acceptConnection(void* arg, struct tcp_pcb* tpcb, bool setTimeout = true);
     static err_t on_connected(void* arg, struct tcp_pcb* tpcb, err_t err);
     static err_t blocking_write(struct tcp_pcb* pcb, ConnectState* fstate, const char* data, size_t len);
     static void dnsCallback(const char *name, const ip_addr_t *ipaddr, void *callback_arg);

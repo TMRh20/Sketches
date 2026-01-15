@@ -99,7 +99,7 @@ err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, con
     while (len > tcp_sndbuf(fpcb)) {
         Ethernet.update();
         if (millis() > timeout) {
-            Serial.println("********** tx timeout *******");
+            IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("********** tx timeout *******"); );
             return ERR_BUF;
         }
     }
@@ -206,13 +206,8 @@ err_t RF24Client::srecv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p
     }
 
     const uint8_t* data = static_cast<const uint8_t*>(p->payload);
-    Serial.print("State ID: "); Serial.print(state->identifier);
-    Serial.print(" Gstate 0: "); Serial.print(gState[0]->stateActiveID);
-    Serial.print(" Gstate 1: "); Serial.println(gState[1]->stateActiveID);
     
-    
-        Serial.print("Copy data to ");
-        Serial.println(state->stateActiveID);
+        IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("Copy data to "); Serial.println(state->stateActiveID); );
         if (dataSize[state->stateActiveID] + p->len < INCOMING_DATA_SIZE){
             memcpy(&incomingData[state->stateActiveID][dataSize[state->stateActiveID]], data, p->len);
             dataSize[state->stateActiveID] += p->len;
@@ -357,8 +352,6 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
             if ((tpcb->state == ESTABLISHED || tpcb->state == SYN_SENT || tpcb->state == SYN_RCVD)) {
                 if(state->backlogWasAccepted == false && state->backlogWasClosed == false){
                     
-                    
-                    //acceptConnection(state, tpcb,false);
                     state->backlogWasAccepted = true;
                     state->connectTimestamp = millis();
                     state->connected = true;
@@ -369,8 +362,6 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
 
                     tcp_backlog_accepted(tpcb);                    
                     activeState = state->stateActiveID;
-                    Serial.print("Active State ");
-                    Serial.println(activeState);
                     return ERR_OK;
                 }
             }
@@ -454,7 +445,7 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
 
 err_t RF24Client::accept(void* arg, struct tcp_pcb* tpcb, err_t err)
 {
-    Serial.println("acc cb");
+    IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("acc cb"); );
     ConnectState* state = (ConnectState*)arg;
 
 if(tpcb != nullptr){
@@ -482,7 +473,6 @@ if(tpcb != nullptr){
         gState[actState]->connected = true;
     }
     
-    //activeState = activeState;
     dataSize[actState] = 0;
     
     simpleCounter+=1;
@@ -513,48 +503,6 @@ err_t RF24Client::closeConn(void* arg, struct tcp_pcb* tpcb)
         tcp_close(tpcb);
     }
     
-    return ERR_OK;
-}
-
-/***************************************************************************************************/
-
-err_t RF24Client::acceptConnection(void* arg, struct tcp_pcb* tpcb, bool setTimeout)
-{
-
-    ConnectState* state = (ConnectState*)arg;
-
-
-
-    if (setTimeout) {
-        myPcb = tpcb;
-        Serial.print("pass arg Gstate ");
-        Serial.println(activeState);
-        tcp_arg(tpcb, RF24Client::gState[activeState]); 
-    }
-
-        if (state->sConnectionTimeout > 0 && setTimeout) {
-            tcp_poll(tpcb, serverTimeouts, 15);
-            state->serverTimer = millis();
-        }
-    
-      tcp_recv(tpcb, srecv_callback);
-      tcp_sent(tpcb, sent_callback);
-
-      IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("############Set State ########  "); Serial.println(simpleCounter); );
-      //simpleCounter++;
-      //state->identifier = simpleCounter;
-
-      state->result = ERR_OK;
-      state->finished = false;
-      
-      state->waiting_for_ack = false;
-      state->cConnectionTimeout = clientConnectionTimeout;
-      state->backlogWasAccepted = false;
-      state->backlogWasClosed = false;
-      state->connectTimestamp = millis();
-      state->delayState = false;
-    //}
-
     return ERR_OK;
 }
 
@@ -1000,13 +948,13 @@ test2:
     return -1;
 #else
 
-    if (myPcb == nullptr) { Serial.println("(((((((((((((((((((mypcb null on write )))))))))))))))))))))");
+    if (myPcb == nullptr) {
         return ERR_CLSD;
     }
     
     bool initialActiveState = activeState;
     
-    if( gState[initialActiveState] == nullptr){ Serial.println("(((((((((((((((((((gstate null on write )))))))))))))))))))))");
+    if( gState[initialActiveState] == nullptr){
         return ERR_CLSD;
     }
     
@@ -1033,33 +981,26 @@ test2:
         //timeout1 = millis() + 3000;
 
         if (myPcb == nullptr ) {
-            Serial.println("((((((((((((((((((( no on write )))))))))))))))))))))");
             return ERR_CLSD;
         }
         gState[initialActiveState]->waiting_for_ack = true;
         err_t write_err = blocking_write(myPcb, gState[initialActiveState], buffer, MAX_PAYLOAD_SIZE - 14);
         
-        if (write_err != ERR_OK) { Serial.println("((((((((((((((((((( no on write 1 )))))))))))))))))))))");
+        if (write_err != ERR_OK) {
             return (write_err);
         }        
         position += MAX_PAYLOAD_SIZE - 14;
         size -= MAX_PAYLOAD_SIZE - 14;
         Ethernet.update();
     }
-    //timeout1 = millis() + 1000;
-    //while (myPcb->snd_queuelen >= TCP_SND_QUEUELEN && millis() < timeout1) {
-    //    Ethernet.update();
-    //}
-    memcpy(buffer, &buf[position], size);
+        memcpy(buffer, &buf[position], size);
 
     if (myPcb == nullptr){
-        Serial.println("((((((((((((((((((( no on write 2 )))))))))))))))))))))");
         return ERR_CLSD;
     }
 
     gState[initialActiveState]->waiting_for_ack = true;
     err_t write_err = blocking_write(myPcb, gState[initialActiveState], buffer, size);
-    
     
     if (write_err == ERR_OK) {
         return (size);
