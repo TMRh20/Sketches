@@ -205,6 +205,7 @@ protected:
         volatile uint32_t clientTimer = millis();
         volatile uint32_t closeTimer = millis();
         volatile uint32_t identifier = 0;
+        volatile bool stateActiveID = 0;
         
     };
 

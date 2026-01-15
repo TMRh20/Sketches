@@ -211,19 +211,24 @@ err_t RF24Client::srecv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p
     Serial.print(" Gstate 0: "); Serial.print(gState[0]->identifier);
     Serial.print(" Gstate 1: "); Serial.println(gState[1]->identifier);
     
-    if(state->identifier == gState[0]->identifier){ 
-        if (dataSize[0] + p->len < INCOMING_DATA_SIZE) { Serial.println("Data to buffer 0");
-            memcpy(&incomingData[0][dataSize[0]], data, p->len);
-            dataSize[0] += p->len;
+    
+    if (dataSize[state->stateActiveID] + p->len < INCOMING_DATA_SIZE){
+      memcpy(&incomingData[state->stateActiveID][dataSize[state->stateActiveID]], data, p->len);
+      dataSize[state->stateActiveID] += p->len;
+    }
+    /*if(state->stateActiveID == gState[0]->stateActiveID){
+        if (dataSize[state->stateActiveID] + p->len < INCOMING_DATA_SIZE) { Serial.print("Data to buffer "); Serial.println(activeState);
+            memcpy(&incomingData[state->stateActiveID][dataSize[state->stateActiveID]], data, p->len);
+            dataSize[state->stateActiveID] += p->len;
         }
     }else
-    if (dataSize[1] + p->len < INCOMING_DATA_SIZE) { Serial.println("Data to buffer 1");
-            memcpy(&incomingData[1][dataSize[1]], data, p->len);
-            dataSize[1] += p->len;
+    if (dataSize[!state->stateActiveID] + p->len < INCOMING_DATA_SIZE) { Serial.print("Data to buffer "); Serial.println(!activeState);
+            memcpy(&incomingData[!state->stateActiveID][dataSize[!state->stateActiveID]], data, p->len);
+            dataSize[!state->stateActiveID] += p->len;
     }
     else {
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("srecv: Out of incoming buffer space"); );
-    }
+    }*/
 
     // Process data
     tcp_recved(tpcb, p->len);
@@ -356,7 +361,7 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("CP Cb ID:"); Serial.println(state->identifier));
     }
     
-    if (myPcb == nullptr ) {
+    if (myPcb == nullptr && gState[activeState]->connected == false) {
         if (state != nullptr && tpcb != nullptr) {
 
             if ((tpcb->state == ESTABLISHED || tpcb->state == SYN_SENT || tpcb->state == SYN_RCVD)) {
@@ -472,6 +477,8 @@ if(tpcb != nullptr){
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("got ACC with already conn: "); Serial.println(accepts); );
       if(tpcb != nullptr){
         simpleCounter+=1;
+        gState[!activeState] = state;
+        state->stateActiveID = !activeState;
         gState[!activeState]->identifier = simpleCounter;        
         accepts++;
         gState[!activeState]->sConnectionTimeout = serverConnectionTimeout;
@@ -494,6 +501,8 @@ if(tpcb != nullptr){
     
     dataSize[activeState] = 0;
     simpleCounter+=1;
+    state->stateActiveID = activeState;
+    gState[activeState] = state;
     gState[activeState]->identifier = simpleCounter;
     state->sConnectionTimeout = serverConnectionTimeout;
     acceptConnection(gState[activeState], tpcb, true);
