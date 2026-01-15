@@ -74,7 +74,7 @@ err_t RF24Client::sent_callback(void* arg, struct tcp_pcb* tpcb, u16_t len)
 err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, const char* data, size_t len)
 {
 
-    if (fstate->identifier != gState[0]->identifier) {
+    if (fstate->identifier != gState[activeState]->identifier) {
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("tx to wrong ID "); );
         return ERR_CLSD;
     }
@@ -208,14 +208,18 @@ err_t RF24Client::srecv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p
 
     const uint8_t* data = static_cast<const uint8_t*>(p->payload);
     Serial.print("State ID: "); Serial.print(state->identifier);
-    Serial.print(" Gstate 0: "); Serial.print(gState[0]->identifier);
-    Serial.print(" Gstate 1: "); Serial.println(gState[1]->identifier);
+    Serial.print(" Gstate 0: "); Serial.print(gState[0]->stateActiveID);
+    Serial.print(" Gstate 1: "); Serial.println(gState[1]->stateActiveID);
     
     
+    Serial.print("Copy data to ");
+    Serial.println(state->stateActiveID);
     if (dataSize[state->stateActiveID] + p->len < INCOMING_DATA_SIZE){
       memcpy(&incomingData[state->stateActiveID][dataSize[state->stateActiveID]], data, p->len);
       dataSize[state->stateActiveID] += p->len;
-    }
+    }    
+    
+    
     /*if(state->stateActiveID == gState[0]->stateActiveID){
         if (dataSize[state->stateActiveID] + p->len < INCOMING_DATA_SIZE) { Serial.print("Data to buffer "); Serial.println(activeState);
             memcpy(&incomingData[state->stateActiveID][dataSize[state->stateActiveID]], data, p->len);
@@ -377,6 +381,7 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
 
                     tcp_backlog_accepted(tpcb);                    
                     activeState = !activeState;
+                    acceptConnection(state, tpcb, false);
                     return ERR_OK;
                 }
             }
@@ -472,17 +477,18 @@ if(tpcb != nullptr){
     #endif
 }
  
-    if (myPcb != nullptr || gState[0]->connected == true) {
+    if (myPcb != nullptr || gState[activeState]->connected == true) {
 		
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("got ACC with already conn: "); Serial.println(accepts); );
       if(tpcb != nullptr){
+        tcp_backlog_delayed(tpcb);
         simpleCounter+=1;
         gState[!activeState]->stateActiveID = !activeState;
-        gState[!activeState]->identifier = simpleCounter;        
+        gState[!activeState]->identifier = simpleCounter;
+        gState[!activeState]->connected = false;        
         accepts++;
         gState[!activeState]->sConnectionTimeout = serverConnectionTimeout;
         tcp_arg(tpcb, RF24Client::gState[!activeState]); 
-        tcp_backlog_delayed(tpcb);
         tcp_poll(tpcb, closed_port, 6);
         acceptConnection(gState[!activeState], tpcb, false);
         Serial.print(" Connect gState ");
@@ -492,7 +498,7 @@ if(tpcb != nullptr){
         dataSize[!activeState] = 0;
         Serial.print("pass arg Gstate ");
         Serial.println(!activeState);
-            
+        
         return ERR_OK;
       }else{
         return ERR_CLSD;  
@@ -503,7 +509,8 @@ if(tpcb != nullptr){
     simpleCounter+=1;
     gState[activeState]->stateActiveID = activeState;
     gState[activeState]->identifier = simpleCounter;
-    state->sConnectionTimeout = serverConnectionTimeout;
+    gState[activeState]->sConnectionTimeout = serverConnectionTimeout;
+    gState[activeState]->connected = true;
     acceptConnection(gState[activeState], tpcb, true);
     Serial.print(" Connect gState ");
     Serial.print(activeState);
@@ -553,12 +560,13 @@ err_t RF24Client::acceptConnection(void* arg, struct tcp_pcb* tpcb, bool setTime
 
       state->result = ERR_OK;
       state->finished = false;
-      state->connected = true;
+      
       state->waiting_for_ack = false;
       state->cConnectionTimeout = clientConnectionTimeout;
       state->backlogWasAccepted = false;
       state->backlogWasClosed = false;
       state->connectTimestamp = millis();
+      state->delayState = false;
     //}
 
     return ERR_OK;
@@ -629,8 +637,8 @@ uint8_t RF24Client::connected()
 #if USE_LWIP < 1
     return (data && (data->packets_in != 0 || (data->state & UIP_CLIENT_CONNECTED))) ? 1 : 0;
 #else
-    if (gState[0] != nullptr) {
-        return gState[0]->connected;
+    if (gState[activeState] != nullptr) {
+        return gState[activeState]->connected;
     }
     return 0;
 #endif
@@ -891,6 +899,7 @@ void RF24Client::stop()
         
         if(gState[activeState] != nullptr){
             gState[activeState]->connected = false;
+            gState[activeState]->finished = true;
         }   
         
 
