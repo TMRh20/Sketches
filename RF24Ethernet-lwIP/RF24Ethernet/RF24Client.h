@@ -224,7 +224,7 @@ protected:
     * the given timeout period (mS) the connection will be closed. Set to 0 to disable
     **/
     //static void setConnectionTimeout(uint32_t timeout);
-    
+    static bool activeState;
 
 
 #endif
