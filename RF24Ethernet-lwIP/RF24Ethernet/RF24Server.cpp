@@ -103,6 +103,7 @@ Serial.println("s Lock");
     
     if (RF24Client::gState[1] == nullptr) {
         RF24Client::gState[1] = new RF24Client::ConnectState;
+        RF24Client::gState[1]->stateActiveID = 1;
     }
     
     if(serverState != nullptr){
