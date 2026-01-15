@@ -361,7 +361,7 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("CP Cb ID:"); Serial.println(state->identifier));
     }
     
-    if (myPcb == nullptr && gState[activeState]->connected == false) {
+    if (myPcb == nullptr ) {
         if (state != nullptr && tpcb != nullptr) {
 
             if ((tpcb->state == ESTABLISHED || tpcb->state == SYN_SENT || tpcb->state == SYN_RCVD)) {
