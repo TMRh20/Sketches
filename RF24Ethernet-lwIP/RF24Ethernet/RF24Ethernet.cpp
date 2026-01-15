@@ -596,12 +596,16 @@ void RF24EthernetClass::tick()
    
     if (result == EXTERNAL_DATA_TYPE) {
 
+      if(RF24Ethernet.network.frag_ptr != nullptr){
         if (RF24Ethernet.network.frag_ptr->message_size > 28) {
             uint16_t len = RF24Ethernet.network.frag_ptr->message_size;
             memcpy(testBuffer,RF24Ethernet.network.frag_ptr->message_buffer,len);
             Ethernet.EthRX_Handler(testBuffer, len);
             IF_ETH_DEBUG_L1( Serial.println("Net in"); );
         }
+      }else{
+          Serial.println("%%%%%%%%%%%%%%%% RF24Network NullPTR %%%%%%%%%%%%%%");
+      }
     }
 
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
