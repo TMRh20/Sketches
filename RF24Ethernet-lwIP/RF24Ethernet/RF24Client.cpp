@@ -881,10 +881,7 @@ void RF24Client::stop()
         if (myPcb != nullptr) {
 
             if (myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD) {
-                if(gState[0] != nullptr){
-                    gState[0]->connected = false;
-                    gState[0]->finished = true;
-                }
+
      
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
                if(Ethernet.useCoreLocking){ LOCK_TCPIP_CORE(); }
@@ -898,6 +895,10 @@ void RF24Client::stop()
             }
         //RF24Server::restart();            
         }
+        
+        if(gState[0] != nullptr){
+            gState[0]->connected = false;
+        }   
         
 
     }
