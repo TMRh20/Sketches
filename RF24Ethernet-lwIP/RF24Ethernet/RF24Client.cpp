@@ -477,11 +477,11 @@ if(tpcb != nullptr){
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("got ACC with already conn: "); Serial.println(accepts); );
       if(tpcb != nullptr){
         simpleCounter+=1;
-        gState[!activeState] = state;
-        state->stateActiveID = !activeState;
+        gState[!activeState]->stateActiveID = !activeState;
         gState[!activeState]->identifier = simpleCounter;        
         accepts++;
         gState[!activeState]->sConnectionTimeout = serverConnectionTimeout;
+        tcp_arg(tpcb, RF24Client::gState[!activeState]); 
         tcp_backlog_delayed(tpcb);
         tcp_poll(tpcb, closed_port, 6);
         acceptConnection(gState[!activeState], tpcb, false);
@@ -492,7 +492,7 @@ if(tpcb != nullptr){
         dataSize[!activeState] = 0;
         Serial.print("pass arg Gstate ");
         Serial.println(!activeState);
-        tcp_arg(tpcb, RF24Client::gState[!activeState]);     
+            
         return ERR_OK;
       }else{
         return ERR_CLSD;  
@@ -501,8 +501,7 @@ if(tpcb != nullptr){
     
     dataSize[activeState] = 0;
     simpleCounter+=1;
-    state->stateActiveID = activeState;
-    gState[activeState] = state;
+    gState[activeState]->stateActiveID = activeState;
     gState[activeState]->identifier = simpleCounter;
     state->sConnectionTimeout = serverConnectionTimeout;
     acceptConnection(gState[activeState], tpcb, true);
