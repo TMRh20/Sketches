@@ -285,7 +285,7 @@ private:
     static pbuf* readRXQueue(EthQueue* RXQueue);
 
     static void EthRX_Handler(const uint8_t* ethFrame, const uint16_t lenEthFrame);
-
+    static uint8_t testBuffer[MAX_PAYLOAD_SIZE];
 #endif
 
 

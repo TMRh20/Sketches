@@ -24,7 +24,7 @@
 RF24EthernetClass::EthQueue RF24EthernetClass::RXQueue __attribute__((aligned(4)));
 netif RF24EthernetClass::myNetif;
 bool RF24EthernetClass::useCoreLocking;
-
+uint8_t RF24EthernetClass::testBuffer[MAX_PAYLOAD_SIZE];
 void RF24EthernetClass::initRXQueue(EthQueue* RXQueue)
 {
     RXQueue->nWrite = 0;
@@ -596,9 +596,10 @@ void RF24EthernetClass::tick()
    
     if (result == EXTERNAL_DATA_TYPE) {
 
-        if (RF24Ethernet.network.frag_ptr->message_size > 0) {
+        if (RF24Ethernet.network.frag_ptr->message_size > 28) {
             uint16_t len = RF24Ethernet.network.frag_ptr->message_size;
-            Ethernet.EthRX_Handler(RF24Ethernet.network.frag_ptr->message_buffer, len);
+            memcpy(testBuffer,RF24Ethernet.network.frag_ptr->message_buffer,len);
+            Ethernet.EthRX_Handler(testBuffer, len);
             IF_ETH_DEBUG_L1( Serial.println("Net in"); );
         }
     }
