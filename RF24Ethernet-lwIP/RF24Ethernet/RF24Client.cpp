@@ -531,10 +531,14 @@ err_t RF24Client::on_connected(void* arg, struct tcp_pcb* tpcb, err_t err)
         state->clientTimer = millis();
         state->result = err;
         state->finished = true;
-        state->connected = true;
+        if(err == ERR_OK){
+            state->connected = true;
+        }else{
+            state->connected = false;
+        }
         state->waiting_for_ack = false;
     }
-    return ERR_OK;
+    return err;
 }
 
 #endif // USE_LWIP > 1
