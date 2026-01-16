@@ -248,9 +248,9 @@ err_t RF24Client::recv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p,
         state->clientTimer = millis();
     }
     const uint8_t* data = static_cast<const uint8_t*>(p->payload);
-    if (dataSize[0] + p->len < INCOMING_DATA_SIZE) {
-        memcpy(&incomingData[0][dataSize[0]], data, p->len);
-        dataSize[0] += p->len;
+    if (dataSize[activeState] + p->len < INCOMING_DATA_SIZE) {
+        memcpy(&incomingData[activeState][dataSize[activeState]], data, p->len);
+        dataSize[activeState] += p->len;
     }
     else {
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("recv: Out of incoming buffer space"); );
@@ -445,7 +445,7 @@ err_t RF24Client::closed_port(void* arg, struct tcp_pcb* tpcb)
 
 err_t RF24Client::accept(void* arg, struct tcp_pcb* tpcb, err_t err)
 {
-    IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("acc cb"); );
+    IF_RF24ETHERNET_DEBUG_CLIENT(Serial.print("acc cb ID "); Serial.println(simpleCounter + 1); );
     ConnectState* state = (ConnectState*)arg;
 
 if(tpcb != nullptr){
@@ -464,12 +464,12 @@ if(tpcb != nullptr){
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("got ACC with already conn: "); Serial.println(accepts); );
         tcp_backlog_delayed(tpcb);
         accepts++;
-        tcp_poll(tpcb, closed_port, 6);
+        tcp_poll(tpcb, closed_port, 5);
         actState = !activeState;
         gState[actState]->connected = false;
     }else{
         myPcb = tpcb;
-        tcp_poll(tpcb, serverTimeouts, 15);
+        tcp_poll(tpcb, serverTimeouts, 8);
         gState[actState]->connected = true;
     }
     
@@ -652,19 +652,19 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
         return 0;
     }
 
-    dataSize[0] = 0;
-    memset(incomingData[0], 0, sizeof(incomingData[0]));
+    dataSize[activeState] = 0;
+    memset(incomingData[activeState], 0, sizeof(incomingData[activeState]));
 
-    if (gState[0] == nullptr) {
-        gState[0] = new ConnectState;
+    if (gState[activeState] == nullptr) {
+        gState[activeState] = new ConnectState;
     }
-    gState[0]->finished = false;
-    gState[0]->connected = false;
-    gState[0]->result = 0;
-    gState[0]->waiting_for_ack = false;
+    gState[activeState]->finished = false;
+    gState[activeState]->connected = false;
+    gState[activeState]->result = 0;
+    gState[activeState]->waiting_for_ack = false;
 
 
-    tcp_arg(myPcb, gState[0]);
+    tcp_arg(myPcb, gState[activeState]);
     tcp_err(myPcb, error_callback);
     tcp_recv(myPcb, recv_callback);
     //tcp_poll(myPcb, clientTimeouts, 30);
@@ -687,8 +687,8 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
         if (myPcb) {
             tcp_abort(myPcb);
         }
-        gState[0]->connected = false;
-        gState[0]->finished = true;
+        gState[activeState]->connected = false;
+        gState[activeState]->finished = true;
     
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     if(Ethernet.useCoreLocking){ UNLOCK_TCPIP_CORE(); }
@@ -701,15 +701,15 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
     #endif
     uint32_t timeout = millis() + 5000;
     // Simulate blocking by looping until the callback sets 'finished'
-    while (!gState[0]->finished && millis() < timeout) {
+    while (!gState[activeState]->finished && millis() < timeout) {
         Ethernet.update();
     }
     
     if(clientConnectionTimeout > 0){
-      gState[0]->clientPollingSetup = 1;
+      gState[activeState]->clientPollingSetup = 1;
     }
     
-    return gState[0]->connected;
+    return gState[activeState]->connected;
 
 #endif
     return 0;
@@ -837,8 +837,8 @@ void RF24Client::stop()
     }
     else {
         if (myPcb != nullptr) {
-            if(gState[0] != nullptr){
-                gState[0]->connected = false;
+            if(gState[activeState] != nullptr){
+                gState[activeState]->connected = false;
             }
 
             if (myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD) {
