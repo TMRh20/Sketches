@@ -71,7 +71,7 @@ void RF24Server::begin()
 #else
 Serial.println("s Lock");
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    if(Ethernet.useCoreLocking){ LOCK_TCPIP_CORE(); }
+    if(Ethernet.useCoreLocking){ ETHERNET_APPLY_LOCK(); }
     #endif
 
     bool closed = false;
@@ -122,7 +122,7 @@ Serial.println("s Lock");
     }
     Serial.println("s un-Lock");
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    if(Ethernet.useCoreLocking){ UNLOCK_TCPIP_CORE(); }
+    if(Ethernet.useCoreLocking){ ETHERNET_REMOVE_LOCK(); }
     #endif
 
 #endif

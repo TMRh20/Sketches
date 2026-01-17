@@ -19,12 +19,13 @@
 #define UIP_TCP_PHYH_LEN UIP_LLH_LEN + UIP_IPTCPH_LEN
 
 #if USE_LWIP < 1
+
 uip_userdata_t RF24Client::all_data[UIP_CONNS];
 #else
    // #define LWIP_ERR_T uint32_t
 
     //
-    #if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266
+    #if !defined ETHERNET_USING_LWIP_ARDUINO
         #include "lwip\tcp.h"
         #include "lwip/tcpip.h"
         #include "lwip/timeouts.h"
@@ -106,7 +107,7 @@ err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, con
     
  
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-   if(Ethernet.useCoreLocking){ LOCK_TCPIP_CORE();  }
+   if(Ethernet.useCoreLocking){ ETHERNET_APPLY_LOCK();  }
     #endif
    
     err_t err = ERR_CLSD;
@@ -123,7 +124,7 @@ err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, con
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print("BLK Write fail 2: "); Serial.println((int)err); );
 
 #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    if(Ethernet.useCoreLocking ){ UNLOCK_TCPIP_CORE();} 
+    if(Ethernet.useCoreLocking ){ ETHERNET_REMOVE_LOCK();} 
     #endif
         return err;
     }
@@ -135,12 +136,12 @@ err_t RF24Client::blocking_write(struct tcp_pcb* fpcb, ConnectState* fstate, con
         IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print(" TCP OUT FAIL 2: "); );
 
 #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    if(Ethernet.useCoreLocking){ UNLOCK_TCPIP_CORE();  }
+    if(Ethernet.useCoreLocking){ ETHERNET_REMOVE_LOCK();  }
     #endif
         return ERR_BUF;
     }
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    if(Ethernet.useCoreLocking ){ UNLOCK_TCPIP_CORE();}
+    if(Ethernet.useCoreLocking ){ ETHERNET_REMOVE_LOCK();}
     #endif
 
     volatile uint32_t timer = millis() + 5000;
@@ -233,15 +234,13 @@ err_t RF24Client::recv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p,
     if (p == nullptr) {
         state->connected = false;
         state->finished = true; // Break the loop
-
         tcp_close(tpcb);
-
-        return ERR_OK;
+        return err;
     }
     if (err != ERR_OK || state == nullptr) {
         if (p)
             pbuf_free(p);
-        return ERR_OK;
+        return err;
     }
 
     if (state != nullptr) {
@@ -449,7 +448,7 @@ err_t RF24Client::accept(void* arg, struct tcp_pcb* tpcb, err_t err)
     ConnectState* state = (ConnectState*)arg;
 
 if(tpcb != nullptr){
-    #if !defined ESP32
+    #if !defined ESP32 && !defined ARDUINO_ARCH_RP2040 && !defined ARDUINO_ARCH_RP2350
     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.print(" Connect From: "); IPAddress remIP; remIP[0] = ip4_addr_get_byte(&tpcb->remote_ip, 0); remIP[1] = ip4_addr_get_byte(&tpcb->remote_ip, 1); 
     remIP[2] = ip4_addr_get_byte(&tpcb->remote_ip, 2); remIP[3] = ip4_addr_get_byte(&tpcb->remote_ip, 3); Serial.println(remIP); );
     #else
@@ -519,11 +518,11 @@ err_t RF24Client::on_connected(void* arg, struct tcp_pcb* tpcb, err_t err)
     if (state != nullptr) {
         /*if (state->cConnectionTimeout > 0) {
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-            if(Ethernet.useCoreLocking){if(Ethernet.useCoreLocking){ LOCK_TCPIP_CORE(); } }
+            if(Ethernet.useCoreLocking){if(Ethernet.useCoreLocking){ ETHERNET_APPLY_LOCK(); } }
     #endif
             tcp_poll(tpcb, clientTimeouts, 30);
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-            if(Ethernet.useCoreLocking){ UNLOCK_TCPIP_CORE(); }
+            if(Ethernet.useCoreLocking){ ETHERNET_REMOVE_LOCK(); }
     #endif
         }*/
 
@@ -632,12 +631,12 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
         if (myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD) {
      
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-            if(Ethernet.useCoreLocking){ LOCK_TCPIP_CORE(); }
+            if(Ethernet.useCoreLocking){ ETHERNET_APPLY_LOCK(); }
     #endif
             tcp_close(myPcb);
     
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-            if(Ethernet.useCoreLocking){ UNLOCK_TCPIP_CORE(); }
+            if(Ethernet.useCoreLocking){ ETHERNET_REMOVE_LOCK(); }
     #endif
             Ethernet.update();
             return false;
@@ -645,13 +644,13 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
     }
      
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-   if(Ethernet.useCoreLocking){ LOCK_TCPIP_CORE(); }
+   if(Ethernet.useCoreLocking){ ETHERNET_APPLY_LOCK(); }
     #endif
     myPcb = tcp_new();
     if (!myPcb) {
     
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    if(Ethernet.useCoreLocking){ UNLOCK_TCPIP_CORE(); }
+    if(Ethernet.useCoreLocking){ ETHERNET_REMOVE_LOCK(); }
     #endif
         return 0;
     }
@@ -675,7 +674,7 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
 
     err_t err = ERR_OK;
     ip4_addr_t myIp;
-    #if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266
+    #if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266 || defined ARDUINO_ARCH_RP2040 || defined ARDUINO_ARCH_RP2350
     IP4_ADDR(&myIp, ip[0], ip[1], ip[2], ip[3]);
     ip_addr_t generic_addr;
     ip_addr_copy_from_ip4(generic_addr, myIp);
@@ -695,13 +694,13 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
         gState[activeState]->finished = true;
     
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    if(Ethernet.useCoreLocking){ UNLOCK_TCPIP_CORE(); }
+    if(Ethernet.useCoreLocking){ ETHERNET_REMOVE_LOCK(); }
     #endif
         return ERR_CLSD;
     }
     
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    if(Ethernet.useCoreLocking){ UNLOCK_TCPIP_CORE(); }
+    if(Ethernet.useCoreLocking){ ETHERNET_REMOVE_LOCK(); }
     #endif
     uint32_t timeout = millis() + 5000;
     // Simulate blocking by looping until the callback sets 'finished'
@@ -817,12 +816,12 @@ void RF24Client::stop()
 
      
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-               if(Ethernet.useCoreLocking){ LOCK_TCPIP_CORE(); }
+               if(Ethernet.useCoreLocking){ ETHERNET_APPLY_LOCK(); }
     #endif
                 tcp_close(myPcb);
     
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-                if(Ethernet.useCoreLocking){ UNLOCK_TCPIP_CORE();}
+                if(Ethernet.useCoreLocking){ ETHERNET_REMOVE_LOCK();}
     #endif
 
             }

@@ -30,15 +30,26 @@
 
 #include <Arduino.h>
 #if (!defined F_CPU || F_CPU > 50000000)
-    #if !defined ARDUINO_ARCH_RP2040 && !defined ARDUINO_ARCH_RP2350
+    #if (defined ARDUINO_ARCH_RP2040 && !defined ARDUINO_ARCH_MBED) || (defined ARDUINO_ARCH_RP2350 && !defined ARDUINO_ARCH_MBED)
         #ifndef USE_LWIP
             #define USE_LWIP 1
         #endif
         #ifndef RF24ETHERNET_USE_UDP
             #define RF24ETHERNET_USE_UDP 1
         #endif
+    #else
+        #if !defined ARDUINO_ARCH_RP2040 && !defined ARDUINO_ARCH_RP2350
+            #ifndef USE_LWIP
+                #define USE_LWIP 1
+            #endif
+            #ifndef RF24ETHERNET_USE_UDP
+                #define RF24ETHERNET_USE_UDP 1
+            #endif
+        #endif
     #endif
 #endif
+
+
 #if USE_LWIP < 1
 extern "C" {
     #include "uip-conf.h"
@@ -46,6 +57,7 @@ extern "C" {
     #include "utility/uiptimer.h"
     #include "utility/uip_arp.h"
 }
+
 #else
 
     #if defined ARDUINO_ARCH_ESP32
@@ -53,8 +65,19 @@ extern "C" {
          #define RF24ETHERNET_CORE_REQUIRES_LOCKING
          #include <WiFi.h>
          #include "esp_wifi.h"
+         #define ETHERNET_APPLY_LOCK LOCK_TCPIP_CORE
+         #define ETHERNET_REMOVE_LOCK UNLOCK_TCPIP_CORE
       #endif
     #endif
+    
+    #if (defined ARDUINO_ARCH_RP2040 || defined ARDUINO_ARCH_RP2350) && !defined ARDUINO_ARCH_MBED
+        //#define RF24ETHERNET_CORE_REQUIRES_LOCKING
+        #include <pico/cyw43_arch.h>
+        #define ETHERNET_APPLY_LOCK cyw43_arch_lwip_begin
+        #define ETHERNET_REMOVE_LOCK cyw43_arch_lwip_end
+    #endif
+    
+    
 
     #include "ethernet_comp.h"
     #include "RF24Client.h"

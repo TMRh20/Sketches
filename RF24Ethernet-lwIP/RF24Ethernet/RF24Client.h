@@ -75,6 +75,8 @@ typedef struct __attribute__((__packed__))
 #else
     #include "RF24Network_config.h"
     #define INCOMING_DATA_SIZE MAX_PAYLOAD_SIZE * 2
+    
+    // If using an internal IP stack, TCP_MSS should be defined
     #if defined TCP_MSS
     #define LWIP_DNS 1
 extern "C" {

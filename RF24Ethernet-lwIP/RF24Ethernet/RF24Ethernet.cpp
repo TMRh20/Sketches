@@ -313,7 +313,7 @@ void RF24EthernetClass::configure(IPAddress ip, IPAddress dns, IPAddress gateway
     #endif
 #else
 
-        #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+        #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING && defined ESP32
             wifi_mode_t mode;
             esp_err_t err = esp_wifi_get_mode(&mode);
             if (err == ESP_OK) {
@@ -321,6 +321,8 @@ void RF24EthernetClass::configure(IPAddress ip, IPAddress dns, IPAddress gateway
             }else{
                 useCoreLocking = false;
             }
+        #elif defined RF24ETHERNET_CORE_REQUIRES_LOCKING
+            useCoreLocking = true;
         #endif
         
     ip4_addr_t myIp, myMask, myGateway;
@@ -331,13 +333,13 @@ void RF24EthernetClass::configure(IPAddress ip, IPAddress dns, IPAddress gateway
     
     void* context = nullptr;
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    if(useCoreLocking){ LOCK_TCPIP_CORE(); }
+    if(useCoreLocking){ ETHERNET_APPLY_LOCK(); }
     #endif
     netif_add(&Ethernet.myNetif, &myIp, &myMask, &myGateway, context, netif_init, ip_input);
     netif_set_default(&Ethernet.myNetif);
     netif_set_up(&Ethernet.myNetif);
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    if(useCoreLocking){ UNLOCK_TCPIP_CORE(); }
+    if(useCoreLocking){ ETHERNET_REMOVE_LOCK(); }
     #endif
 
 #endif
@@ -355,11 +357,11 @@ void RF24EthernetClass::set_gateway(IPAddress gwIP)
     ip4_addr_t new_gw;
     IP4_ADDR(&new_gw, gwIP[0], gwIP[1], gwIP[2], gwIP[3]);
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    if(useCoreLocking){ LOCK_TCPIP_CORE(); }
+    if(useCoreLocking){ ETHERNET_APPLY_LOCK(); }
     #endif
     netif_set_gw(&Ethernet.myNetif, &new_gw);
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    if(useCoreLocking){ UNLOCK_TCPIP_CORE(); }
+    if(useCoreLocking){ ETHERNET_REMOVE_LOCK(); }
     #endif
 #endif
 }
@@ -373,7 +375,7 @@ void RF24EthernetClass::listen(uint16_t port)
 #else
 
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    if(useCoreLocking){ LOCK_TCPIP_CORE(); } 
+    if(useCoreLocking){ ETHERNET_APPLY_LOCK(); } 
     #endif
     RF24Client::myPcb = tcp_new();
     RF24Client::serverActive = true;
@@ -396,7 +398,7 @@ void RF24EthernetClass::listen(uint16_t port)
     tcp_accept(RF24Client::myPcb, RF24Client::accept);
 
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-    if(useCoreLocking){ UNLOCK_TCPIP_CORE(); }
+    if(useCoreLocking){ ETHERNET_REMOVE_LOCK(); }
     #endif
 #endif
 }
@@ -486,7 +488,7 @@ void RF24EthernetClass::EthRX_Handler(const uint8_t* ethFrame, const uint16_t le
 void RF24EthernetClass::tick()
 {
 
-#if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_RP2040) || defined (ARDUINO_ARCH_NRF52)
+#if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_RP2040) || defined (ARDUINO_ARCH_NRF52) || defined ARDUINO_ARCH_RP2350
     yield();
 #elif defined(ARDUINO_ARCH_ESP32)
     const TickType_t xDelay = pdMS_TO_TICKS(1);
@@ -609,12 +611,12 @@ void RF24EthernetClass::tick()
     }
 
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-         if(useCoreLocking ){ LOCK_TCPIP_CORE(); } 
+         if(useCoreLocking ){ ETHERNET_APPLY_LOCK(); } 
     #endif
     sys_check_timeouts();
 
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-         if(useCoreLocking ){ UNLOCK_TCPIP_CORE();  } 
+         if(useCoreLocking ){ ETHERNET_REMOVE_LOCK();  } 
     #endif
     
     pbuf* p = readRXQueue(&RXQueue);
@@ -622,7 +624,7 @@ void RF24EthernetClass::tick()
     {
 
          #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-         if(useCoreLocking){ LOCK_TCPIP_CORE(); } 
+         if(useCoreLocking){ ETHERNET_APPLY_LOCK(); } 
         #endif
         if (myNetif.input(p, &myNetif) != ERR_OK)
         {
@@ -632,7 +634,7 @@ void RF24EthernetClass::tick()
         }
 
         #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-        if(useCoreLocking){ UNLOCK_TCPIP_CORE();}
+        if(useCoreLocking){ ETHERNET_REMOVE_LOCK();}
         #endif
     }
     
