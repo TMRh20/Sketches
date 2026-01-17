@@ -60,8 +60,10 @@ extern "C" {
     #include "RF24Client.h"
     #include "RF24Server.h"
     #define HTONS htons
-    #include "RF24Udp.h"
-    #include "Dns.h"
+    #if RF24ETHERNET_USE_UDP > 0
+      #include "RF24Udp.h"
+      #include "Dns.h"
+    #endif
 
     #if !defined ETHERNET_USING_LWIP_ARDUINO
         #include "lwip\ip.h"
