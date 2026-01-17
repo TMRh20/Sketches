@@ -312,8 +312,8 @@ err_t RF24Client::serverTimeouts(void* arg, struct tcp_pcb* tpcb)
                 state->closeTimer = millis();
                 state->backlogWasClosed = true;
                 dataSize[activeState] = 0;
-                gState[activeState]->connected = false;
-                gState[activeState]->finished = true; 
+                state->connected = false;
+                state->finished = true; 
                 if(state->backlogWasAccepted == false ){
                     IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("------with backlog accepted--------"); );
                     tcp_backlog_accepted(tpcb);
@@ -689,7 +689,7 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
 
     if (err != ERR_OK) {
         if (myPcb) {
-            tcp_abort(myPcb);
+            tcp_close(myPcb);
         }
         gState[activeState]->connected = false;
         gState[activeState]->finished = true;
@@ -697,7 +697,7 @@ int RF24Client::connect(IPAddress ip, uint16_t port)
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     if(Ethernet.useCoreLocking){ UNLOCK_TCPIP_CORE(); }
     #endif
-        return ERR_ABRT;
+        return ERR_CLSD;
     }
     
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
@@ -811,9 +811,6 @@ void RF24Client::stop()
     RF24Ethernet.update();
 #else
 
-    if (serverActive) {
-
-        uint32_t timeout = millis() + 1000;
         if (myPcb != nullptr) {
 
             if (myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD) {
@@ -829,39 +826,13 @@ void RF24Client::stop()
     #endif
 
             }
-        //RF24Server::restart();            
         }
-        
+
         if(gState[activeState] != nullptr){
             gState[activeState]->connected = false;
             gState[activeState]->finished = true;
-        }   
-        
-
-    }
-    else {
-        if (myPcb != nullptr) {
-            if(gState[activeState] != nullptr){
-                gState[activeState]->connected = false;
-            }
-
-            if (myPcb->state == ESTABLISHED || myPcb->state == SYN_SENT || myPcb->state == SYN_RCVD) {
-     
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-               if(Ethernet.useCoreLocking){ LOCK_TCPIP_CORE(); }
-    #endif
-                tcp_close(myPcb);
-    
-    
-    #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
-                if(Ethernet.useCoreLocking){ UNLOCK_TCPIP_CORE(); }
-    #endif
-    
-            }
         }
-    }
 
-    //RF24Ethernet.update();
 #endif
 }
 
@@ -962,27 +933,12 @@ test2:
         return ERR_CLSD;
     }
     
-    /*uint32_t timeout = millis() + 5000;
-    while(gState[0]->waiting_for_ack == true || gState[0]->finished == false){
-        Ethernet.update();
-        if(millis() > timeout){
-            return ERR_BUF;
-        }
-    }*/
-  
-    
     char buffer[size];
     uint32_t position = 0;
     uint32_t timeout1 = millis() + 3000;
 
     while (size > MAX_PAYLOAD_SIZE - 14 && millis() < timeout1) {
-        //uint32_t timeout = millis() + 1000;
-        //while (myPcb->snd_queuelen >= TCP_SND_QUEUELEN && millis() < timeout) {
-        //    Ethernet.update();
-        //}
         memcpy(buffer, &buf[position], MAX_PAYLOAD_SIZE - 14);
-
-        //timeout1 = millis() + 3000;
 
         if (myPcb == nullptr ) {
             return ERR_CLSD;
@@ -997,7 +953,8 @@ test2:
         size -= MAX_PAYLOAD_SIZE - 14;
         Ethernet.update();
     }
-        memcpy(buffer, &buf[position], size);
+    
+    memcpy(buffer, &buf[position], size);
 
     if (myPcb == nullptr){
         return ERR_CLSD;
