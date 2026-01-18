@@ -104,7 +104,7 @@ public:
 
     /**
      * Establish a connection to a given hostname and port
-     * @note UDP must be enabled in uip-conf.h for DNS lookups to work
+     * @note With slower devices < 50Mhz, or if using the uIP stack, UDP must be enabled in uip-conf.h for DNS lookups to work
      *
      * @note Tip: DNS lookups generally require a buffer size of 250-300 bytes or greater.
      * Lookups will generally return responses with a single A record if using hostnames like
@@ -132,7 +132,13 @@ public:
     /** Disconnects from the current active connection */
     void stop();
 
-    /** Indicates whether the client is connected or not */
+    /** 
+    * Indicates whether the client is connected or not 
+    * When using slower devices < 50MHz (uIP stack) there is a default connection timeout of 45 seconds. If data is not received or sent successfully
+    * within that timeframe the client will be disconnected. 
+    * With faster devices > 50Mhz (lwIP stack), there is NO default connection timeout. Use the clientConnectionTimeout functions to set the timeout on 
+    * connect or disconnect, and utilize application side timeouts to disconnect as necessary after a connection has been established.
+    */
     uint8_t connected();
 
     /**
