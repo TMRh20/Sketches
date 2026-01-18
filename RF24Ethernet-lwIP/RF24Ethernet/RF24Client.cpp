@@ -175,11 +175,11 @@ err_t RF24Client::srecv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p
     if (p == nullptr) {
         if(state != nullptr){
           state->connected = false;
-        //state->finished = true; // Break the loop
+          state->finished = true; // Break the loop
         }
-        tcp_close(tpcb);
-        myPcb = nullptr;
-
+        if(tpcb != nullptr){
+            tcp_close(tpcb);
+        }
         return ERR_OK;
     }
     if (err != ERR_OK || state == nullptr) {
