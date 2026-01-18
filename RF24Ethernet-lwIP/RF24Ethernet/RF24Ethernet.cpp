@@ -24,12 +24,18 @@
 RF24EthernetClass::EthQueue RF24EthernetClass::RXQueue __attribute__((aligned(4)));
 netif RF24EthernetClass::myNetif;
 bool RF24EthernetClass::useCoreLocking;
-uint8_t RF24EthernetClass::testBuffer[MAX_PAYLOAD_SIZE];
+uint8_t RF24EthernetClass::networkBuffer[MAX_PAYLOAD_SIZE];
+IPAddress RF24EthernetClass::_dnsServerAddress;
+
+/*************************************************************/
+
 void RF24EthernetClass::initRXQueue(EthQueue* RXQueue)
 {
     RXQueue->nWrite = 0;
     RXQueue->nRead = 0;
 }
+
+/*************************************************************/
 
 //Saves RX ethernet frame to the buffer to be processed in the main loop
 void RF24EthernetClass::writeRXQueue(EthQueue* RXQueue, const uint8_t* ethFrame, uint16_t lenEthFrame)
@@ -43,6 +49,8 @@ void RF24EthernetClass::writeRXQueue(EthQueue* RXQueue, const uint8_t* ethFrame,
     RXQueue->nWrite++;
     RXQueue->nWrite %= MAX_RX_QUEUE;
 }
+
+/*************************************************************/
 
 pbuf* RF24EthernetClass::readRXQueue(EthQueue* RXQueue)
 {
@@ -68,10 +76,14 @@ pbuf* RF24EthernetClass::readRXQueue(EthQueue* RXQueue)
     }
 }
 
+/*************************************************************/
+
 bool RF24EthernetClass::isUnicast(const uint8_t frame)
 {
     return (frame & 0x01) == 0;
 }
+
+/*************************************************************/
 
 err_t netif_output(struct netif* netif, struct pbuf* p)
 {
@@ -144,12 +156,16 @@ err_t netif_output(struct netif* netif, struct pbuf* p)
     return ERR_OK;
 }
 
+/*************************************************************/
+
 err_t tun_netif_output(struct netif* netif, struct pbuf* p, const ip4_addr_t* ipaddr)
 {
     /* Since this is a TUN/L3 interface, we skip ARP (etharp_output).
        We simply call the linkoutput function to send the raw IP packet. */
     return netif->linkoutput(netif, p);
 }
+
+/*************************************************************/
 
 err_t netif_init(struct netif* myNetif)
 {
@@ -170,9 +186,6 @@ err_t netif_init(struct netif* myNetif)
 }
 
 #endif
-
-IPAddress RF24EthernetClass::_dnsServerAddress;
-// DhcpClass* RF24EthernetClass::_dhcp(NULL);
 
 /*************************************************************/
 #if !defined NRF52_RADIO_LIBRARY
@@ -289,7 +302,7 @@ void RF24EthernetClass::configure(IPAddress ip, IPAddress dns, IPAddress gateway
     mesh.setNodeID(ip[3]);
 #endif
 
-#ifndef USE_LWIP
+#if USE_LWIP < 1
     uip_buf = (uint8_t*)&network.frag_ptr->message_buffer[0];
 
     uip_ipaddr_t ipaddr;
@@ -349,7 +362,7 @@ void RF24EthernetClass::configure(IPAddress ip, IPAddress dns, IPAddress gateway
 
 void RF24EthernetClass::set_gateway(IPAddress gwIP)
 {
-#ifndef USE_LWIP
+#if USE_LWIP < 1
     uip_ipaddr_t ipaddr;
     uip_ip_addr(ipaddr, gwIP);
     uip_setdraddr(ipaddr);
@@ -378,7 +391,6 @@ void RF24EthernetClass::listen(uint16_t port)
     if(useCoreLocking){ ETHERNET_APPLY_LOCK(); } 
     #endif
     RF24Client::myPcb = tcp_new();
-    RF24Client::serverActive = true;
     tcp_err(RF24Client::myPcb, RF24Client::error_callback);
 
 
@@ -407,7 +419,7 @@ void RF24EthernetClass::listen(uint16_t port)
 
 IPAddress RF24EthernetClass::localIP()
 {
-#ifndef USE_LWIP
+#if USE_LWIP < 1
     uip_ipaddr_t a;
     uip_gethostaddr(a);
     return ip_addr_uip(a);
@@ -425,7 +437,7 @@ IPAddress RF24EthernetClass::localIP()
 
 IPAddress RF24EthernetClass::subnetMask()
 {
-#ifndef USE_LWIP
+#if USE_LWIP < 1
     uip_ipaddr_t a;
     uip_getnetmask(a);
     return ip_addr_uip(a);
@@ -443,7 +455,7 @@ IPAddress RF24EthernetClass::subnetMask()
 
 IPAddress RF24EthernetClass::gatewayIP()
 {
-#ifndef USE_LWIP
+#if USE_LWIP < 1
     uip_ipaddr_t a;
     uip_getdraddr(a);
     return ip_addr_uip(a);
@@ -465,7 +477,7 @@ IPAddress RF24EthernetClass::dnsServerIP()
 }
 
 /*******************************************************/
-#if defined USE_LWIP
+#if USE_LWIP > 0
 //Should be call inside PHY RX Ethernet IRQ
 void RF24EthernetClass::EthRX_Handler(const uint8_t* ethFrame, const uint16_t lenEthFrame)
 {
@@ -485,6 +497,8 @@ void RF24EthernetClass::EthRX_Handler(const uint8_t* ethFrame, const uint16_t le
 
 #endif
 
+/*******************************************************/
+
 void RF24EthernetClass::tick()
 {
 
@@ -495,7 +509,7 @@ void RF24EthernetClass::tick()
     vTaskDelay(xDelay);
 #endif
 
-#ifndef USE_LWIP
+#if USE_LWIP < 1
     uint8_t result = RF24Ethernet.mesh.update();
 
    if(Ethernet.mesh.mesh_address == 0){
@@ -592,22 +606,18 @@ void RF24EthernetClass::tick()
 #else // Using LWIP
 
     uint8_t result = RF24Ethernet.mesh.update();
+    
     if(Ethernet.mesh.mesh_address == 0){
        Ethernet.mesh.DHCP();
     }
    
     if (result == EXTERNAL_DATA_TYPE) {
-
-      if(RF24Ethernet.network.frag_ptr != nullptr){
         if (RF24Ethernet.network.frag_ptr->message_size > 28) {
             uint16_t len = RF24Ethernet.network.frag_ptr->message_size;
-            memcpy(testBuffer,RF24Ethernet.network.frag_ptr->message_buffer,len);
-            Ethernet.EthRX_Handler(testBuffer, len);
+            memcpy(networkBuffer,RF24Ethernet.network.frag_ptr->message_buffer,len);
+            Ethernet.EthRX_Handler(networkBuffer, len);
             IF_ETH_DEBUG_L1( Serial.println("Net in"); );
         }
-      }else{
-          Serial.println("%%%%%%%%%%%%%%%% RF24Network NullPTR %%%%%%%%%%%%%%");
-      }
     }
 
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
@@ -647,7 +657,7 @@ void RF24EthernetClass::tick()
 void RF24EthernetClass::network_send()
 {
 
-#ifndef USE_LWIP
+#if USE_LWIP < 1
     IPAddress gwIP = Ethernet.gatewayIP();
     int16_t nodeAddress = 0;
 

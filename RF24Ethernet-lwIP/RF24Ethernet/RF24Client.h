@@ -196,8 +196,8 @@ protected:
         volatile bool backlogWasClosed = false;
         
         volatile bool backlogWasAccepted = false;
-        volatile bool delayState = false;
         volatile bool clientPollingSetup = 0;
+        volatile bool stateActiveID = 0;
         volatile err_t result = 0;
         
         volatile uint32_t connectTimestamp = millis();
@@ -207,7 +207,7 @@ protected:
         volatile uint32_t clientTimer = millis();
         volatile uint32_t closeTimer = millis();
         volatile uint32_t identifier = 0;
-        volatile bool stateActiveID = 0;
+
         
     };
 
@@ -270,7 +270,6 @@ private:
     static struct tcp_pcb* myPcb; // = nullptr;//tcp_new();// = nullptr;//tcp_new();
     
     static char incomingData[2][INCOMING_DATA_SIZE];
-    static bool serverActive;
     static uint32_t simpleCounter;
     
 #endif

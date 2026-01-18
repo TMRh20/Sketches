@@ -16,11 +16,11 @@
   */
 #include "RF24Ethernet.h"
 
-#define UIP_TCP_PHYH_LEN UIP_LLH_LEN + UIP_IPTCPH_LEN
-
 #if USE_LWIP < 1
 
+#define UIP_TCP_PHYH_LEN UIP_LLH_LEN + UIP_IPTCPH_LEN
 uip_userdata_t RF24Client::all_data[UIP_CONNS];
+
 #else
    // #define LWIP_ERR_T uint32_t
 
@@ -40,11 +40,11 @@ RF24Client::ConnectState* RF24Client::gState[2];
 char RF24Client::incomingData[2][INCOMING_DATA_SIZE];
 uint16_t RF24Client::dataSize[2];
 struct tcp_pcb* RF24Client::myPcb;
-bool RF24Client::serverActive;
 uint32_t RF24Client::clientConnectionTimeout;
 uint32_t RF24Client::serverConnectionTimeout;
 uint32_t RF24Client::simpleCounter;
 bool RF24Client::activeState;
+
 /***************************************************************************************************/
 
 // Called when the remote host acknowledges receipt of data
@@ -487,7 +487,6 @@ if(tpcb != nullptr){
     gState[actState]->backlogWasAccepted = false;
     gState[actState]->backlogWasClosed=false;
     gState[actState]->connectTimestamp=millis();
-    gState[actState]->delayState=false;
     gState[actState]->serverTimer = millis();
     
     tcp_arg(tpcb, RF24Client::gState[actState]);    

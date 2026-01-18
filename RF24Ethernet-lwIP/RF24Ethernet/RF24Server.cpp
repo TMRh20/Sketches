@@ -69,7 +69,7 @@ void RF24Server::begin()
 #if USE_LWIP < 1
     uip_listen(_port);
 #else
-Serial.println("s Lock");
+
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     if(Ethernet.useCoreLocking){ ETHERNET_APPLY_LOCK(); }
     #endif
@@ -79,8 +79,6 @@ Serial.println("s Lock");
     if(sPcb == nullptr){
       sPcb = tcp_new();
     }
-    
-    RF24Client::serverActive = true;
     
     if(sPcb != nullptr){
         tcp_err(sPcb, RF24Client::error_callback);
@@ -118,9 +116,9 @@ Serial.println("s Lock");
       tcp_arg(sPcb, serverState);
       tcp_accept(sPcb, RF24Client::accept);
     }else{
-        Serial.println("Server failed to initialize");
+        IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("Server failed to initialize"); );
     }
-    Serial.println("s un-Lock");
+
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING
     if(Ethernet.useCoreLocking){ ETHERNET_REMOVE_LOCK(); }
     #endif

@@ -54,10 +54,10 @@
 extern "C" {
     #include "uip-conf.h"
     #include "utility/uip.h"
+
     #include "utility/uiptimer.h"
     #include "utility/uip_arp.h"
-}
-
+}    
 #else
 
     #if defined ARDUINO_ARCH_ESP32
@@ -296,9 +296,9 @@ public:
 
     typedef uint32_t err_t;
     static bool isUnicast(const uint8_t frame);
-    /** Used internally to initiallize incoming data queue */
+    /** Used internally to initialize incoming data queue */
     static void initRXQueue(EthQueue* RXQueue);
-    /** Used internally to write to the internall data queue */
+    /** Used internally to write to the internal data queue */
     static void writeRXQueue(EthQueue* RXQueue, const uint8_t* ethFrame, uint16_t lenEthFrame);
 
     
@@ -310,7 +310,7 @@ private:
     static pbuf* readRXQueue(EthQueue* RXQueue);
 
     static void EthRX_Handler(const uint8_t* ethFrame, const uint16_t lenEthFrame);
-    static uint8_t testBuffer[MAX_PAYLOAD_SIZE];
+    static uint8_t networkBuffer[MAX_PAYLOAD_SIZE];
 #endif
 
 
@@ -320,7 +320,12 @@ private:
     RF24& radio;
 #endif
 
+#if USE_LWIP < 1
+    IPAddress _dnsServerAddress;
+#else
     static IPAddress _dnsServerAddress;
+#endif
+
     void configure(IPAddress ip, IPAddress dns, IPAddress gateway, IPAddress subnet);
 
     // tick() must be called at regular intervals to process the incoming serial
