@@ -37,7 +37,8 @@ EthernetClient::ConnectState* RF24Server::serverState;
 RF24Server::RF24Server(uint16_t port)
 {
     _port = port;
-    //RF24Client::sConnectionTimeout = 30000;
+    // Allocate data for a second server/client
+    RF24Client::incomingData[1] = (char*)malloc(INCOMING_DATA_SIZE);
 }
 
 #endif
@@ -88,7 +89,7 @@ void RF24Server::begin()
 
     if (err != ERR_OK) {
         //Debug print
-        IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("unable to bind to port"););
+        IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("Server: Unable to bind to port"););
     }
 
     if(serverState == nullptr){
@@ -116,7 +117,7 @@ void RF24Server::begin()
       tcp_arg(sPcb, serverState);
       tcp_accept(sPcb, RF24Client::accept);
     }else{
-        IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("Server failed to initialize"); );
+        IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("Server: Failed to initialize"); );
     }
 
     #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING

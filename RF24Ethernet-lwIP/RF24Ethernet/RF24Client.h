@@ -269,7 +269,7 @@ private:
     static uint16_t dataSize[2];
     static struct tcp_pcb* myPcb; // = nullptr;//tcp_new();// = nullptr;//tcp_new();
     
-    static char incomingData[2][INCOMING_DATA_SIZE];
+    static char* incomingData[2];
     static uint32_t simpleCounter;
     
 #endif

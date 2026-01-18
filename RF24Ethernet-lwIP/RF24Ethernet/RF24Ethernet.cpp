@@ -144,7 +144,7 @@ err_t netif_output(struct netif* netif, struct pbuf* p)
         }
     }
 
-    IF_ETH_DEBUG_L1( Serial.print("Net out: "); Serial.println(nodeAddress, OCT); );
+    IF_ETH_DEBUG_L1( Serial.print("Net: Out "); Serial.println(nodeAddress, OCT); );
     
     RF24NetworkHeader headerOut(nodeAddress, EXTERNAL_DATA_TYPE);
 
@@ -325,6 +325,9 @@ void RF24EthernetClass::configure(IPAddress ip, IPAddress dns, IPAddress gateway
     uip_arp_init();
     #endif
 #else
+    
+    // Allocate data for a single client
+    RF24Client::incomingData[0] = (char*)malloc(INCOMING_DATA_SIZE);
 
         #if defined RF24ETHERNET_CORE_REQUIRES_LOCKING && defined ESP32
             wifi_mode_t mode;
@@ -396,7 +399,7 @@ void RF24EthernetClass::listen(uint16_t port)
 
     err_t err = tcp_bind(RF24Client::myPcb, IP_ADDR_ANY, port);
     if (err != ERR_OK) {
-        IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("unable to bind to port"););
+        IF_RF24ETHERNET_DEBUG_CLIENT(Serial.println("Server: Unable to bind to port"););
     }
 
     RF24Client::gState[0]->finished = false;
@@ -616,7 +619,7 @@ void RF24EthernetClass::tick()
             uint16_t len = RF24Ethernet.network.frag_ptr->message_size;
             memcpy(networkBuffer,RF24Ethernet.network.frag_ptr->message_buffer,len);
             Ethernet.EthRX_Handler(networkBuffer, len);
-            IF_ETH_DEBUG_L1( Serial.println("Net in"); );
+            IF_ETH_DEBUG_L1( Serial.println("Net: In"); );
         }
     }
 
