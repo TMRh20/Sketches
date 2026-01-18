@@ -39,6 +39,7 @@ RF24Server::RF24Server(uint16_t port)
     _port = port;
     // Allocate data for a second server/client
     RF24Client::incomingData[1] = (char*)malloc(INCOMING_DATA_SIZE);
+
 }
 
 #endif

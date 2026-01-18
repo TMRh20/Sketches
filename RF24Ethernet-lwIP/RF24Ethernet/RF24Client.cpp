@@ -175,10 +175,11 @@ err_t RF24Client::srecv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p
     if (p == nullptr) {
         if(state != nullptr){
           state->connected = false;
-          state->finished = true; // Break the loop
+          //state->finished = true; // Break the loop
         }
         if(tpcb != nullptr){
             tcp_close(tpcb);
+            myPcb = nullptr;
         }
         return ERR_OK;
     }
@@ -496,7 +497,7 @@ err_t RF24Client::closeConn(void* arg, struct tcp_pcb* tpcb)
 
 err_t RF24Client::on_connected(void* arg, struct tcp_pcb* tpcb, err_t err)
 {
-    IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("Clienbt: Conn cb"); );
+    IF_RF24ETHERNET_DEBUG_CLIENT( Serial.println("Client: Conn cb"); );
 
     ConnectState* state = (ConnectState*)arg;
 
