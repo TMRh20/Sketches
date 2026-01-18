@@ -232,9 +232,13 @@ err_t RF24Client::recv_callback(void* arg, struct tcp_pcb* tpcb, struct pbuf* p,
 
     ConnectState* state = (ConnectState*)arg;
     if (p == nullptr) {
-        state->connected = false;
-        state->finished = true; // Break the loop
-        tcp_close(tpcb);
+        if(state != nullptr){
+            state->connected = false;
+            state->finished = true; // Break the loop
+        }
+        if(tpcb != nullptr){
+            tcp_close(tpcb);
+        }
         return err;
     }
     if (err != ERR_OK || state == nullptr) {
