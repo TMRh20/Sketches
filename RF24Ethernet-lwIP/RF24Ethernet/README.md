@@ -7,6 +7,9 @@
 
 ### Updated 2026:
 
+### THIS CODE WAS LAST UPDATED JAN 19 2026 AND IS NOW MIGRATED TO https://github.com/nRF24/RF24Ethernet/tree/lwIP ###
+### IT WILL BE INTEGRATED INTO THE MAIN BRANCH OF RF24ETHERNET VERY SOON ###
+
 RF24Ethernet now supports the lwIP stack!
 
 Faster devices (>50mHz) will automatically use the lwIP stack instead of the uIP stack, providing a better, faster and more reliable way to connect.
