@@ -2,15 +2,6 @@ This is a copy of the RF24Ethernet library designed to work with the lwIP IP sta
 
 The code should be considered experimental as it was development for the current RF24Ethernet library. 
 
-### THIS CODE WAS LAST UPDATED JAN 19 2026 AND IS NOW MIGRATED TO https://github.com/nRF24/RF24Ethernet/tree/lwIP ###
-### IT WILL BE INTEGRATED INTO THE MAIN BRANCH OF RF24ETHERNET VERY SOON ###
+### THIS CODE WAS LAST UPDATED JAN 19 2026 AND IS NOW MIGRATED TO https://github.com/nRF24/RF24Ethernet ###
 
-Requires:
-1. Arduino lwIP library can be installed from Arduino Library Manager (ESP32 and ESP8266 devices already have the lwIP stack installed internally)
-
-To install:
-1. Copy the RF24Ethernet folder into your Arduino Libraries folder at Documents/Arduino/libraries/
-2. See the docs and getting started information at https://nrf24.github.io/RF24Ethernet/
-3. The library is configured to detect CPU speeds over 50Mhz and use lwIP automatically, but users can edit RF24Ethernet.h and #define USE_LWIP
-4. See lwipopts.h included with the lwIP library to configure the stack
-5. For now users would need install RF24Network from zip and edit the RF24Network_config.h file and set #define MAX_PAYLOAD_SIZE 1514
+[https://nrf24.github.io/RF24Ethernet/](https://nrf24.github.io/RF24Ethernet/)
