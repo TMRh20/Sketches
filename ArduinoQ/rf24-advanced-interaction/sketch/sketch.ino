@@ -111,7 +111,7 @@ void setup() {
   // printf_begin();             // needed only once for printing details
   // radio.printDetails();       // (smaller) function that prints raw register values
   // radio.printPrettyDetails(); // (larger) function that prints human readable data
-  Bridge.provide("toggleMatrix", toggleMatrix);
+  Bridge.provide_safe("toggleMatrix", toggleMatrix);
 } 
 
 uint32_t matrixTimer = 1000;
