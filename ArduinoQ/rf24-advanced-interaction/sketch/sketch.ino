@@ -153,7 +153,7 @@ void loop() {
     }
 
     // to make this example readable in the serial monitor
-    //delay(1000);  // slow transmissions down by 1 second
+    delay(1000);  // slow transmissions down by 1 second
 
   } else {
     // This device is a RX node
