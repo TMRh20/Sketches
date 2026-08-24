@@ -1,5 +1,5 @@
 These files allow users to build custom files for the Uno Q MCU using Zephyr
-The main.cpp file can be modified to any example from the RF24Ethernet, RF24Mesh, RF24Network or RF24 libraries
+The main.cpp file can be modified to any example from the RF24Ethernet, RF24Mesh, RF24Network or RF24 libraries, just make sure to include myCompat.h
 
 See google for instructions on installing west and the zephyrproject files
 
