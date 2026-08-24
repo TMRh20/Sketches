@@ -11,3 +11,27 @@ Copy the zephyr.elf file from the build/zephyr/ directory to the Arduino Q then 
 
 Note: Serial output is confined to the TX/RX pins 0 & 1 on the board.
 
+Needed changes to core files:
+
+Edit the file ~/.arduino15/packages/arduino/hardware/zephyr/0.90.0/cores/arduino/inlines.h
+
+```
+static inline __attribute__((always_inline)) void delay(unsigned long ms) {
+	k_sleep(K_MSEC(ms));
+}
+
+static inline __attribute__((always_inline)) void delayMicroseconds(unsigned int us) {
+	if (us == 0) {
+		return;
+	}
+	k_busy_wait(us - 1);
+}
+```
+
+Edit the file ~/.arduino15/packages/arduino/hardware/zephyr/0.90.0/cores/arduino/api/Common.h
+
+```
+static inline void delay(unsigned long);
+static inline void delayMicroseconds(unsigned int us);
+```
+
