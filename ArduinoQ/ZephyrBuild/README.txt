@@ -1,4 +1,5 @@
 These files allow users to build custom files for the Uno Q MCU using Zephyr
+The main.cpp file can be modified to any example from the RF24Ethernet, RF24Mesh, RF24Network or RF24 libraries
 
 See google for instructions on installing west and the zephyrproject files
 
@@ -9,3 +10,4 @@ Copy the zephyr.elf file from the build/zephyr/ directory to the Arduino Q then 
 /opt/openocd/bin/openocd   -s /opt/openocd   -f openocd_gpiod.cfg   -c "program zephyr.elf verify reset exit"
 
 Note: Serial output is confined to the TX/RX pins 0 & 1 on the board.
+
