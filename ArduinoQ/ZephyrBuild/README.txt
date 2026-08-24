@@ -1,3 +1,7 @@
+These files allow users to build custom files for the Uno Q MCU using Zephyr
+
+See google for instructions on installing west and the zephyrproject files
+
 Compile from the zephyrproject directory with the command:
 west build -p always -b arduino_uno_q -d ~/ZephyrBuild/build ~/ZephyrBuild/
 
