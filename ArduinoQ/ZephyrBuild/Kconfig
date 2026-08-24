@@ -1,0 +1,5 @@
+# 1. Pull in the baseline Zephyr main Kconfig definitions
+source "Kconfig.zephyr"
+
+# 2. Force-source the out-of-tree Arduino Core Kconfig definitions
+source "/home/tmrh20/ArduinoProject/zephyrproject/modules/lib/arduinocore-zephyr/Kconfig"
