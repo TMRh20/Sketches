@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20.0)
 
 
 set(ZEPHYR_EXTRA_MODULES 
-    "/home/tmrh20/ArduinoProject/zephyrproject/modules/lib/ArduinoCore-zephyr"
+    "/home/tmrh20/ArduinoProject/zephyrproject/modules/lib/arduinocore-zephyr"
 )
 
 set(BOARD_VARIANT "arduino_uno_q")
@@ -57,11 +57,6 @@ target_sources(app PRIVATE
     ${LIB_DIR}/RF24Ethernet/Dns.cpp
     
 )
-
-target_include_directories(app PRIVATE
- ${RF24_LIB_DIR}
- ${ARDUINO_CORE_DIR}/cores/arduino
- )
 
 target_include_directories(app PRIVATE
     "${LIB_DIR}/Arduino_RouterBridge/src"
