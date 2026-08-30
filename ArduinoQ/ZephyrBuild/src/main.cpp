@@ -33,8 +33,6 @@ uint8_t frame_gradient[FRAME_SIZE] = {  // Define a X shaped gradient frame as a
 };
 
 
-void connect();
-
 
 void setup() {
 
