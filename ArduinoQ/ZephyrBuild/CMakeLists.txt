@@ -1,13 +1,12 @@
 cmake_minimum_required(VERSION 3.20.0)
 
-
-set(ZEPHYR_EXTRA_MODULES 
-    "/home/tmrh20/ArduinoProject/zephyrproject/modules/lib/arduinocore-zephyr"
-)
-
 set(BOARD_VARIANT "arduino_uno_q")
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
+
+set(ZEPHYR_EXTRA_MODULES 
+    "${ZEPHYR_BASE}/modules/lib/arduinocore-zephyr"
+)
 
 project(myTestSketch)
 
@@ -16,6 +15,11 @@ set(LIB_DIR "~/Arduino/libraries")
 
 target_sources(app PRIVATE 
     src/main.cpp
+    ${LIB_DIR}/Arduino_RouterBridge/src/singletons.cpp
+    ${LIB_DIR}/Arduino_RouterBridge/src/Arduino_RouterBridge.h
+    ${LIB_DIR}/Arduino_RouterBridge/src/routerbridge_provides_serial.h
+    ${LIB_DIR}/Arduino_RouterBridge/src/bridge.h
+    ${LIB_DIR}/Arduino_RouterBridge/src/monitor.h
     ${LIB_DIR}/RF24/RF24.cpp
     ${LIB_DIR}/lwIP/src/lwip/core/netif.c
     ${LIB_DIR}/lwIP/src/lwip/core/tcp.c
@@ -55,11 +59,13 @@ target_sources(app PRIVATE
     ${LIB_DIR}/RF24Ethernet/RF24Server.cpp
     ${LIB_DIR}/RF24Ethernet/RF24Udp.cpp
     ${LIB_DIR}/RF24Ethernet/Dns.cpp
+    ${LIB_DIR}/Arduino_RPClite/src/Arduino_RPClite.h
+    ${ARDUINO_CORE_DIR}/cores/arduino/new.cpp
     
+
 )
 
 target_include_directories(app PRIVATE
-    "${LIB_DIR}/Arduino_RouterBridge/src"
     "${ARDUINO_CORE_DIR}/cores/arduino"
     "${ARDUINO_CORE_DIR}/cores/arduino/api"
     "${ARDUINO_CORE_DIR}/variants/arduino_uno_q_stm32u585xx"
@@ -76,6 +82,8 @@ target_include_directories(app PRIVATE
     "${LIB_DIR}/lwIP/src"
     "${ARDUINO_CORE_DIR}/libraries/Arduino_LED_Matrix/src"
     "${LIB_DIR}/ArduinoGraphics/src"
+    "${LIB_DIR}/Arduino_RouterBridge/src"
+    ${ZEPHYR_BASE}/../modules/lib/arduinocore-zephyr/loader/
 )
 zephyr_compile_definitions(
     ARDUINO
@@ -84,9 +92,6 @@ zephyr_compile_definitions(
 target_compile_definitions(app PRIVATE 
     -DCONFIG_BOARD_ARDUINO_UNO_Q
     -DARDUINO_VARIANT="arduino_uno_q_stm32u585xx"
-    -DNUM_HW_SERIAL=1
-    -DPIN_SERIAL1_RX=0
-    -DPIN_SERIAL1_TX=1
     -DUSE_LWIP=1
     -DRF24ETHERNET_USE_UDP=1
  )

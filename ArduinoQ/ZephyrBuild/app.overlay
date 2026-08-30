@@ -99,7 +99,6 @@
 	};
 };
 
-
 /* Enable PWM timers */
 &timers1 {
 	status = "okay";
@@ -216,6 +215,7 @@
 	counter_matrix: counter {
 		status = "okay";
 		label = "LED_MATRIX_COUNTER";
+        compatible = "st,stm32-counter";
 	};
 };
 
@@ -267,9 +267,9 @@
 	current-speed = <115200>;
 };
 
+
 &lpuart1 {
 	status = "okay";
-	zephyr,deferred-init;
 };
 
 / {
@@ -388,9 +388,8 @@
 					<&gpioc 1 0>,
 					<&gpioc 0 0>;
 
-		/*arduino,router-serial = <&lpuart1>; /* 'Serial' is provided by the Monitor */
-		router-serial = <&lpuart1>;
-        serials = <&usart1>, <&lpuart1>, <&usart3>;
+		arduino,router-serial = <&lpuart1>; /* 'Serial' is provided by the Monitor */
+		serials = <&usart1>, <&lpuart1>, <&usart3>;
 		cans = <&fdcan1>;
 		i2cs = <&i2c2>, <&i2c4>, <&i2c3>;
 		spis = <&spi2>, <&spi3>;
@@ -434,3 +433,5 @@
 		dac-resolution = <12>;
 	};
 };
+
+
