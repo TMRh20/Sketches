@@ -7,7 +7,7 @@
       revision: main
       url: https://github.com/arduino/ArduinoCore-zephyr
     - name: arduino-api
-      path: modules/lib/arduinocore-zephyr/cores
+      path: modules/lib/arduinocore-zephyr/cores/arduino
       revision: master
       url: https://github.com/arduino/ArduinoCore-API
 ```
