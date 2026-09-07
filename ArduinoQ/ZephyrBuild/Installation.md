@@ -28,7 +28,7 @@
 Note: Required Arduino libraries (Install from source or the Arduino Library Manager): 
 
 Arduino Library Manager:
-`lwIP, RF24, RF24Network, RF24Mesh, RF24Ethernet, Arduino Graphics`
+`lwIP, RF24, RF24Mesh, Arduino Graphics`
 
 From source:
 ```
