@@ -1,0 +1,15 @@
+menuconfig RF24_NETIF
+	bool "RF24 Zephyr network interface (phase 1)"
+	depends on NETWORKING
+	default y
+	help
+	  Minimal RF24-backed network interface scaffold.
+
+if RF24_NETIF
+
+config RF24_NETIF_MTU
+	int "RF24 netif MTU"
+	default 1500
+	range 512 1500
+
+endif
