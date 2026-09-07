@@ -20,7 +20,7 @@ set(LIB_DIR "~/Arduino/libraries")
 
 target_sources(app PRIVATE 
     src/main.cpp
-    drivers/net/rf24_netif.c 
+    ${LIB_DIR}/RF24Ethernet/drivers/net/rf24_netif.c
     ${ARDUINO_CORE_DIR}/cores/arduino/Arduino.h
     ${LIB_DIR}/Arduino_RouterBridge/src/singletons.cpp
     ${LIB_DIR}/Arduino_RouterBridge/src/Arduino_RouterBridge.h
@@ -42,7 +42,7 @@ target_sources(app PRIVATE
 )
 
 target_include_directories(app PRIVATE
-    drivers/net
+    #drivers/net
     "${ARDUINO_CORE_DIR}/cores/arduino"
     "${ARDUINO_CORE_DIR}/cores/arduino/api"
     "${ARDUINO_CORE_DIR}/variants/arduino_uno_q_stm32u585xx"
