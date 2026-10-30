@@ -33,10 +33,5 @@
 Note: Required Arduino libraries (Install from source or the Arduino Library Manager): 
 
 Arduino Library Manager:
-`lwIP, RF24, RF24Mesh, Arduino Graphics`
+`RF24Ethernet, Arduino Graphics`
 
-From source:
-```
-RF24Network
-RF24Ethernet : https://github.com/nRF24/RF24Ethernet/tree/ZephyrNetworking
-```
