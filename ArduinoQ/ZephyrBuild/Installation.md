@@ -14,15 +14,8 @@
 
 4. Run west update
 5. Run west blobs fetch
-6. Fix compilation errors (Fixes have been submitted via GitHub):
-7. Edit the file zephyrproject/modules/lib/arduinocore-zephyr/cores/arduino/zephyrSerial.cpp line 82
-8. Change the line to `uart_irq_update(uart);`
-9. Edit the file zephyrproject/modules/lib/arduinocore-zephyr/cores/arduino/inlines.h lines 16 & 20
-10. Change both functions to read `static inline __attribute__((always_inline))`
-11. Edit the file zephyrproject/modules/lib/arduinocore-zephyr/cores/arduino/api/Common.h lines 124 & 125 where delay and delayMicroseconds are declared
-12. Change both functions to `static void delay(unsigned long);` & `static void delayMicroseconds(unsigned int us);`
-13. Download the ZephyrBuild sketch from this repo
-14. Compile the project from the zephyrproject directory:
+6. Download the ZephyrBuild sketch from this repo
+7. Compile the project from the zephyrproject directory:
 
 `west build -p always -b arduino_uno_q <path-to-your-project>`
 
