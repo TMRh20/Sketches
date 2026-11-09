@@ -14,7 +14,8 @@ The MCU re-reads the time every hour to correct `millis()` drift. The Linux cloc
 
 ## Hardware
 
-nRF24L01 on the UNO header SPI (D11 MOSI, D12 MISO, D13 SCK), CE on D7, CSN on D8.
+1. nRF24L01 on the UNO header SPI (D11 MOSI, D12 MISO, D13 SCK), CE on D7, CSN on D8.
+2. RF24Gateway running on a Linux machine like Raspberry Pi, with a TLS enabled MQTT server running on port 8883 or network connectivity enabled to reach remote MQTT servers. (Forwarding enabled etc.)
 
 ## Setup
 
