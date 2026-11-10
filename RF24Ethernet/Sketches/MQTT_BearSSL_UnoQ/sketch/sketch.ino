@@ -154,6 +154,19 @@ static void seedRandom()
     randomSeed(seed);
 }
 
+// Add 256 bits from the Linux kernel CSPRNG on every connection.
+static void tlsProfile(br_ssl_client_context* sc, br_x509_minimal_context* xc, const br_x509_trust_anchor* tas, size_t numTAs)
+{
+    br_ssl_client_init_full(sc, xc, tas, numTAs); // Must be first: it clears sc
+    uint32_t r[8] = {0};
+    for (auto& v : r) {
+        if (!Bridge.call("get_random").result(v)) {
+            Monitor.println("WARNING: get_random failed, weak TLS keys");
+        }
+    }
+    br_ssl_engine_inject_entropy(&sc->eng, r, sizeof(r));
+}
+  
 void connect()
 {
     Monitor.print("connecting (TLS)...");
@@ -208,6 +221,7 @@ void setup()
     snprintf(clientID, sizeof(clientID), "arduinoClient%u", (uint8_t)ip[3]);
     Monitor.println(clientID);
 
+    sslClient.setProfile(tlsProfile);
     client.begin(server, MQTT_TLS_PORT, sslClient);
     client.setTimeout(30000); // ms to wait for broker responses. The TLS handshake over RF24 is slow
     client.setKeepAlive(30);  // seconds

@@ -123,22 +123,42 @@ unsigned long getTime() {
 }
 
 /**** Randomness ****/
-// ArduinoBearSSL seeds TLS from random() when no crypto chip is present.
-// Seed random() from ADC noise and timing jitter so the session keys differ every boot.
-static void seedRandom() {
-  uint32_t seed = 0;
-  for (int i = 0; i < 256; i++) {
-    uint32_t sample = analogRead(ENTROPY_PIN);
+// With no crypto chip, ArduinoBearSSL makes its TLS entropy with random(),
+// which has only a 32-bit seed. tlsProfile() adds 32 bytes of our own on
+// every connection, made by hashing ADC noise and timing jitter.
+// The STM32F411 has no hardware RNG, so this is a best effort: its strength
+// depends on how noisy ENTROPY_PIN is.
+static void gatherEntropy(uint8_t out[32]) {
+  br_sha256_context ctx;
+  br_sha256_init(&ctx);
+  for (int i = 0; i < 1024; i++) {
+    uint32_t sample[4] = { (uint32_t)analogRead(ENTROPY_PIN), 0, 0, micros() };
 #if defined(ATEMP)
-    sample ^= (uint32_t)analogRead(ATEMP) << 8;
+    sample[1] = analogRead(ATEMP);
 #endif
 #if defined(AVREF)
-    sample ^= (uint32_t)analogRead(AVREF) << 16;
+    sample[2] = analogRead(AVREF);
 #endif
-    sample ^= micros();
-    seed = (seed << 5 | seed >> 27) ^ sample;  // rotate and mix
-    seed *= 2654435761UL;
+    br_sha256_update(&ctx, sample, sizeof(sample));
   }
+  br_sha256_out(&ctx, out);
+}
+
+// Called by BearSSLClient at the start of every TLS connection
+static void tlsProfile(br_ssl_client_context* sc, br_x509_minimal_context* xc,
+                       const br_x509_trust_anchor* tas, size_t numTAs) {
+  br_ssl_client_init_full(sc, xc, tas, numTAs);  // Must be first: it clears sc
+  uint8_t entropy[32];
+  gatherEntropy(entropy);
+  br_ssl_engine_inject_entropy(&sc->eng, entropy, sizeof(entropy));
+}
+
+// Seed random() too, for anything else that uses it
+static void seedRandom() {
+  uint8_t entropy[32];
+  uint32_t seed;
+  gatherEntropy(entropy);
+  memcpy(&seed, entropy, sizeof(seed));
   randomSeed(seed);
 }
 
@@ -182,6 +202,7 @@ void setup() {
   snprintf(clientID, sizeof(clientID), "arduinoClient%u", (uint8_t)ip[3]);
   Serial.println(clientID);
 
+  sslClient.setProfile(tlsProfile);
   client.begin(server, MQTT_TLS_PORT, sslClient);
   client.setTimeout(30000);  // ms to wait for broker responses. The TLS handshake over RF24 is slow
   client.setKeepAlive(30);   // seconds
